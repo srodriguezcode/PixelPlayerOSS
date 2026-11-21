@@ -35,5 +35,9 @@ data class OfflineTrackEntity(
     @ColumnInfo(name = "total_bytes") val totalBytes: Long? = null,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
-    @ColumnInfo(name = "error_message") val errorMessage: String? = null
+    @ColumnInfo(name = "error_message") val errorMessage: String? = null,
+    /** Set when the saved cover is first fetched. */
+    @ColumnInfo(name = "song_cover_uri") val songCoverUri: String? = null,
+    /** Differs from [songCoverUri] for Jellyfin, where each song has its own cover. */
+    @ColumnInfo(name = "album_cover_uri") val albumCoverUri: String? = null
 )

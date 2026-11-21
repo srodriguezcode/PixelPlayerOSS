@@ -17,6 +17,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Precision
 import com.lostf1sh.pixelplayeross.data.image.RemoteArtworkCache
+import com.lostf1sh.pixelplayeross.data.offline.OfflineCopyCovers
 import com.lostf1sh.pixelplayeross.utils.AlbumArtUtils
 import java.io.File
 import java.io.FileNotFoundException
@@ -44,7 +45,7 @@ class SharedArtworkContentProvider : ContentProvider() {
         val cloudArtworkUri = parseCloudArtworkUri(uri.toString(), appContext.packageName)
         if (cloudArtworkUri != null) {
             // Cloud covers are served as cached, in whatever format the server sent.
-            return RemoteArtworkCache.cacheFileFor(appContext.cacheDir, cloudArtworkUri)
+            return savedOrCachedArtworkFile(appContext.cacheDir, appContext.filesDir, cloudArtworkUri)
                 ?.let(RemoteArtworkCache::imageMimeType)
                 ?: DEFAULT_CONTENT_TYPE
         }
@@ -154,7 +155,7 @@ class SharedArtworkContentProvider : ContentProvider() {
         appContext: Context,
         rawArtworkUri: String,
     ): ParcelFileDescriptor {
-        val cachedFile = resolveCachedCloudArtwork(appContext.cacheDir, rawArtworkUri)
+        val cachedFile = resolveCachedCloudArtwork(appContext.cacheDir, appContext.filesDir, rawArtworkUri)
         if (cachedFile == null) {
             warmCloudArtworkCache(appContext, rawArtworkUri)
             throw FileNotFoundException("Cloud artwork is not cached yet")
@@ -202,16 +203,24 @@ class SharedArtworkContentProvider : ContentProvider() {
          */
         internal const val MAX_SHARED_CLOUD_ARTWORK_DIMENSION_PX = 2048
 
-        /** The cached cover file for [rawArtworkUri] if it can be served as-is, else null. */
+        /** Saved cover of an offline copy, else the cached cover, if it can be served as-is. */
         internal fun resolveCachedCloudArtwork(
             cacheDir: File,
+            filesDir: File,
             rawArtworkUri: String,
             readArtworkImageBounds: (File) -> ArtworkImageBounds? = ::decodeArtworkImageBounds,
         ): File? {
             if (!isSupportedCloudArtworkUri(rawArtworkUri)) return null
-            return RemoteArtworkCache.cacheFileFor(cacheDir, rawArtworkUri)
-                ?.takeIf { isSafeForExternalArtworkReader(it, readArtworkImageBounds) }
+            return listOfNotNull(
+                OfflineCopyCovers.fileFor(filesDir, rawArtworkUri),
+                RemoteArtworkCache.cacheFileFor(cacheDir, rawArtworkUri),
+            ).firstOrNull { isSafeForExternalArtworkReader(it, readArtworkImageBounds) }
         }
+
+        private fun savedOrCachedArtworkFile(cacheDir: File, filesDir: File, rawArtworkUri: String): File? =
+            OfflineCopyCovers.fileFor(filesDir, rawArtworkUri)
+                ?.takeIf(RemoteArtworkCache::isCachedImage)
+                ?: RemoteArtworkCache.cacheFileFor(cacheDir, rawArtworkUri)
 
         internal fun isSafeForExternalArtworkReader(
             file: File,

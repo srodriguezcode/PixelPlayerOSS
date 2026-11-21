@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.common.truth.Truth.assertThat
 import com.lostf1sh.pixelplayeross.data.image.NavidromeCoilFetcher
 import com.lostf1sh.pixelplayeross.data.navidrome.NavidromeRepository
+import com.lostf1sh.pixelplayeross.data.offline.OfflineCopyCovers
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -25,6 +26,9 @@ class SharedArtworkContentProviderCloudArtworkTest {
     @TempDir
     lateinit var cacheDir: File
 
+    @TempDir
+    lateinit var filesDir: File
+
     private val pngBytes = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
 
     // BitmapFactory isn't available on the JVM; covers are cached server-resized to 500 px.
@@ -33,7 +37,7 @@ class SharedArtworkContentProviderCloudArtworkTest {
 
     @Test
     fun `cover that is not cached yet is not served`() {
-        val resolved = SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12", coverBounds)
+        val resolved = SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12", coverBounds)
 
         assertThat(resolved).isNull()
         assertThat(cacheDir.listFiles()).isEmpty()
@@ -49,9 +53,9 @@ class SharedArtworkContentProviderCloudArtworkTest {
             every { isLoggedIn } returns true
             every { getCoverArtUrl("al-12", 500) } returns "https://navidrome.example/rest/getCoverArt.view?id=al-12&size=500"
         }
-        NavidromeCoilFetcher(coverUri, repository, clientReturning(pngBytes), cacheDir).fetch()
+        NavidromeCoilFetcher(coverUri, repository, clientReturning(pngBytes), cacheDir, filesDir).fetch()
 
-        val resolved = SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12", coverBounds)
+        val resolved = SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12", coverBounds)
 
         assertThat(resolved).isNotNull()
         assertThat(resolved!!.readBytes()).isEqualTo(pngBytes)
@@ -61,7 +65,7 @@ class SharedArtworkContentProviderCloudArtworkTest {
     fun `cached Jellyfin cover is served`() {
         val cached = File(cacheDir, "jellyfin_cover_item-84_500.jpg").apply { writeBytes(pngBytes) }
 
-        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "jellyfin_cover://item-84", coverBounds))
+        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "jellyfin_cover://item-84", coverBounds))
             .isEqualTo(cached)
     }
 
@@ -70,7 +74,7 @@ class SharedArtworkContentProviderCloudArtworkTest {
         File(cacheDir, "navidrome_cover_al-12_500.jpg").writeBytes(pngBytes)
         val cached = File(cacheDir, "navidrome_cover_al-12_300.jpg").apply { writeBytes(pngBytes) }
 
-        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12?size=300", coverBounds))
+        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12?size=300", coverBounds))
             .isEqualTo(cached)
     }
 
@@ -79,7 +83,7 @@ class SharedArtworkContentProviderCloudArtworkTest {
         File(cacheDir, "navidrome_cover_al-12_500.jpg")
             .writeText("""{"subsonic-response":{"status":"failed"}}""")
 
-        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12", coverBounds))
+        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12", coverBounds))
             .isNull()
     }
 
@@ -89,7 +93,7 @@ class SharedArtworkContentProviderCloudArtworkTest {
             pngBytes + ByteArray(SharedArtworkContentProvider.MAX_SHARED_CLOUD_ARTWORK_BYTES.toInt())
         )
 
-        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12", coverBounds))
+        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12", coverBounds))
             .isNull()
     }
 
@@ -99,7 +103,7 @@ class SharedArtworkContentProviderCloudArtworkTest {
         val tooWide = SharedArtworkContentProvider.MAX_SHARED_CLOUD_ARTWORK_DIMENSION_PX + 1
 
         assertThat(
-            SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12") {
+            SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12") {
                 ArtworkImageBounds(tooWide, 400)
             }
         ).isNull()
@@ -110,13 +114,13 @@ class SharedArtworkContentProviderCloudArtworkTest {
         File(cacheDir, "navidrome_cover_al-12_500.jpg").writeBytes(pngBytes)
 
         assertThat(
-            SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "navidrome_cover://al-12") { null }
+            SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "navidrome_cover://al-12") { null }
         ).isNull()
     }
 
     @Test
     fun `non-cloud artwork URI is not resolved against the cover cache`() {
-        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, "https://example.com/cover.jpg", coverBounds))
+        assertThat(SharedArtworkContentProvider.resolveCachedCloudArtwork(cacheDir, filesDir, "https://example.com/cover.jpg", coverBounds))
             .isNull()
     }
 
@@ -131,4 +135,17 @@ class SharedArtworkContentProviderCloudArtworkTest {
                 .build()
         }
         .build()
+
+    @Test
+    fun `saved cover of an offline copy is served when the cache is empty`() {
+        val saved = OfflineCopyCovers.fileFor(filesDir, "navidrome_cover", "al-12")
+            .apply { parentFile!!.mkdirs() }
+        saved.writeBytes(pngBytes)
+
+        val resolved = SharedArtworkContentProvider.resolveCachedCloudArtwork(
+            cacheDir, filesDir, "navidrome_cover://al-12?size=300", coverBounds
+        )
+
+        assertThat(resolved).isEqualTo(saved)
+    }
 }

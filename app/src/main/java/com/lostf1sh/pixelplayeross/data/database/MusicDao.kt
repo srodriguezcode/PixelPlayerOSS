@@ -484,6 +484,9 @@ interface MusicDao {
     @Query("SELECT id FROM songs WHERE content_uri_string = :contentUri LIMIT 1")
     suspend fun getSongIdByContentUri(contentUri: String): Long?
 
+    @Query("SELECT album_art_uri_string FROM songs WHERE content_uri_string = :contentUri LIMIT 1")
+    suspend fun getSongArtUriByContentUri(contentUri: String): String?
+
     /** Artwork URI of the album that the song with [contentUri] belongs to, if any. */
     @Query(
         """

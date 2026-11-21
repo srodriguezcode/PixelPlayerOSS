@@ -8,6 +8,7 @@ import coil.request.Options
 import coil.size.Dimension
 import coil.size.Size
 import com.lostf1sh.pixelplayeross.data.navidrome.NavidromeRepository
+import com.lostf1sh.pixelplayeross.data.offline.OfflineCopyCovers
 import kotlinx.coroutines.CancellationException
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -59,6 +60,7 @@ class NavidromeCoilFetcher(
     private val repository: NavidromeRepository,
     private val okHttpClient: OkHttpClient,
     private val cacheDir: File,
+    private val filesDir: File,
     private val requestedSize: Size? = null
 ) : Fetcher {
 
@@ -95,6 +97,8 @@ class NavidromeCoilFetcher(
             Timber.v("$TAG: Not logged in, skipping fetch")
             return null
         }
+
+        OfflineCopyCovers.savedResult(filesDir, RemoteArtworkCache.NAVIDROME_COVER_SCHEME, coverArtId)?.let { return it }
 
         val sizeParam = resolveCloudCoverSize(
             explicitSizeParam = uri.getQueryParameter("size")?.toIntOrNull(),
@@ -138,11 +142,13 @@ class NavidromeCoilFetcher(
     ) : Fetcher.Factory<Uri> {
 
         private var cacheDir: File? = null
+        private var filesDir: File? = null
 
         override fun create(data: Uri, options: Options, imageLoader: ImageLoader): Fetcher? {
             return if (data.scheme == "navidrome_cover") {
                 val cache = cacheDir ?: options.context.cacheDir.also { cacheDir = it }
-                NavidromeCoilFetcher(data, repository, okHttpClient, cache, options.size)
+                val files = filesDir ?: options.context.filesDir.also { filesDir = it }
+                NavidromeCoilFetcher(data, repository, okHttpClient, cache, files, options.size)
             } else {
                 null
             }

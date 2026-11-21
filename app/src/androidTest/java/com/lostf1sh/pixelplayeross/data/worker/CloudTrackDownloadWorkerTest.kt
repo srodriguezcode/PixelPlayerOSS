@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker
+import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
@@ -65,7 +66,8 @@ class CloudTrackDownloadWorkerTest {
                     workerParameters: WorkerParameters
                 ): ListenableWorker =
                     CloudTrackDownloadWorker(
-                        appContext, workerParameters, dao, navidrome, jellyfin, exports, OkHttpClient()
+                        appContext, workerParameters, dao, navidrome, jellyfin, exports,
+                        mockk<WorkManager>(relaxed = true), OkHttpClient()
                     )
             }
             fun worker() = TestListenableWorkerBuilder<CloudTrackDownloadWorker>(context)

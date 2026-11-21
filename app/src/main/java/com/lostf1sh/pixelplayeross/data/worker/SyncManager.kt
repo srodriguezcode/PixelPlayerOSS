@@ -133,6 +133,7 @@ class SyncManager @Inject constructor(
         observeSyncCompletion()
         observeAppForeground()
         schedulePeriodicMaintenance()
+        OfflineCoverWorker.enqueue(workManager)
     }
 
     /**
