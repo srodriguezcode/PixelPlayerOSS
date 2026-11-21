@@ -1,0 +1,359 @@
+---
+name: deslop-text
+description: Review written text (landing page copy, idea writeups, emails, any prose) for AI-generated writing patterns and fix them. Run after drafting any text a human will read.
+---
+
+You are reviewing written text for AI-generated writing patterns. These are the word choices, sentence constructions, and structural habits that make text immediately recognisable as machine-generated. The goal is text that reads as if a specific human wrote it with a specific point to make.
+
+## How to run this review
+
+1. Identify the target. If the user specified a file, read it. If they pasted text, use that. If neither, ask.
+2. Run every check in the **35 warning signs** below against the text.
+3. For each violation found, cite the specific phrase or sentence and state which warning sign it triggers.
+4. Suggest a concrete rewrite for each violation. Do not just say "remove this" — show what the sentence becomes.
+5. Report findings grouped by severity:
+   - **High** — patterns that are instant AI tells (W1 filler phrases, W5 marketing language, W6 generic openings, W9 paired adjectives, W15 excited-to-announce, W33 status-announcement openers)
+   - **Medium** — patterns that weaken the writing even when not obviously AI (W3 em-dashes, W7 passive voice, W8 hedging, W11 mechanical transitions, W26 uncontracted forms)
+   - **Low** — statistical patterns that only matter in aggregate (W20 "very", W28 repetitive words, W29 sentence length uniformity)
+6. End with a count: "X violations found across Y of 35 checks."
+7. If the user asks you to fix the text (not just review), apply all rewrites and present the cleaned version.
+
+---
+
+## The 35 warning signs
+
+### W1 · Filler phrases
+
+Phrases that add no meaning. Delete them or rewrite the sentence without them.
+
+Target phrases:
+- "it's worth noting", "it bears mentioning", "it goes without saying"
+- "at the end of the day", "moving forward", "when all is said and done"
+- "delve into", "navigate" (used metaphorically), "underscore" (as emphasis verb)
+- "leverage" (as a verb), "utilize" (instead of "use")
+- "nuanced", "tapestry", "landscape" (used metaphorically)
+- "not only X but also Y"
+- "holistic", "robust", "cutting-edge"
+
+### W2 · "Not X, it is Y" constructions
+
+Contrastive framing where the negation adds nothing. The positive statement carries the meaning; the negation is just runway.
+
+The pattern takes many forms:
+- Single sentence: "This is not about speed, it is about reliability."
+- Split across sentences: "It's not about speed. It's about reliability."
+- Inverted/rhetorical: "Speed? No. Reliability."
+- With contractions: "It's not one big giveaway. It's a pile of small ones."
+- Softer forms: "less about X, more about Y"
+
+Flag any adjacent sentence pair where one negates and the next affirms the same subject, regardless of exact phrasing.
+
+Fix: say what it is directly. Cut the negation.
+
+### W3 · Em-dash overuse
+
+Dashes bolting parenthetical asides onto sentences. One em-dash per document is fine. Three or more is a pattern.
+
+Flag if: more than one dash-delimited aside per paragraph, or more than 3 em-dashes in the full document.
+
+Fix: if the aside matters, give it its own sentence. If not, cut it.
+
+### W4 · Rhetorical questions
+
+Questions used as section openers or transitions rather than genuine inquiry. "What if you could automate your entire workflow?"
+
+Flag if: more than one rhetorical question per 500 words.
+
+Exception: do NOT flag "Question? Answer." pairs where the sentence immediately following the question is a direct answer to it. This is intentional structure (e.g., "How did we solve this? We built a simulator."). Only flag rhetorical questions that are standalone openers or transitions with no direct answer following.
+
+Fix: merge the question and answer into a single declarative sentence, or convert to a "To [verb]..." construction. Never delete just the question and leave the answer orphaned as a non-sequitur statement.
+
+### W5 · Marketing language
+
+Adjectives that sell rather than describe.
+
+Target words: "powerful", "seamless", "revolutionary", "game-changing", "cutting-edge", "best-in-class", "world-class", "next-generation", "innovative", "groundbreaking", "transformative".
+
+Fix: replace with a specific, factual description. "Powerful search" becomes "search that handles 10M records in under 200ms."
+
+### W6 · Generic openings
+
+Opening sentences that could begin any article on any topic.
+
+Target patterns:
+- "In today's [connected/digital/fast-paced/modern] world..."
+- "As we all know..."
+- "Have you ever wondered..."
+- "Imagine [a world where/if you could]..."
+- "[Industry] is evolving rapidly..."
+
+Fix: start with the specific claim, finding, or situation.
+
+### W7 · Passive voice as habit
+
+Consistent use of passive constructions where active voice would be clearer.
+
+Look for: "was [verb]ed", "is being [verb]ed", "has been [verb]ed", "it was found", "it was determined", "it can be seen".
+
+Flag if: passive constructions exceed 20% of sentences.
+
+Fix: name the actor. "It was found that..." becomes "We found..."
+
+### W8 · Excessive hedging
+
+Qualifying every statement into meaninglessness.
+
+Target patterns: "it seems like", "it appears that", "it could be argued", "one might say", "it is possible that", "arguably", "perhaps", "in some ways".
+
+Flag if: more than 2 hedging phrases per 500 words.
+
+Fix: commit to the claim or cut the sentence.
+
+### W9 · Paired adjectives with "yet" or "and"
+
+"Simple yet powerful", "elegant and robust", "lightweight but comprehensive".
+
+Fix: pick the stronger adjective. Drop the pairing.
+
+### W10 · Meta-references
+
+Text that narrates its own structure instead of just having structure.
+
+Third-person/impersonal forms: "In this post...", "As we discussed above...", "Let's explore...", "In this article...", "As mentioned earlier...", "Below, we'll cover..."
+
+First-person forms: "I grouped them into three tiers based on...", "I've organized these by...", "I read through this list and realized...", "I want to walk you through..."
+
+Both do the same thing: tell the reader about the article's organization rather than letting the organization speak for itself.
+
+Fix: delete. The reader knows they are reading the post. If the structure is clear, you don't need to announce it.
+
+### W11 · Mechanical transitions
+
+Formulaic transition words used to connect paragraphs.
+
+Target: "Furthermore", "Moreover", "Additionally", "In conclusion", "That said", "With that in mind", "Having established that", "It is also worth mentioning".
+
+Fix: connect ideas with a sentence that earns the transition, or just start the next paragraph without one.
+
+### W12 · Bold emphasis in body copy
+
+`<strong>` or `<b>` wrapping a short phrase inside a paragraph to highlight a key selling point: "with **zero configuration**", "in **days rather than months**".
+
+Flag if: 2+ paragraphs use this, or 1 instance appears in the hero subheadline.
+
+Fix: rewrite so emphasis comes from sentence position. Or give the phrase its own line.
+
+### W13 · Scare quotes
+
+Quotation marks used for emphasis or irony around ordinary words, not actual quotations. The tool "seamlessly" integrates.
+
+Fix: choose a better word. Drop the quotes.
+
+### W14 · Section-end summaries
+
+Closing a section by restating what was just said. The last sentence of a section paraphrases the first sentence or heading.
+
+Fix: delete. Move on.
+
+### W15 · "Excited to announce/share" openers
+
+"We're excited to announce...", "I'm thrilled to share...", "We're proud to present...".
+
+Fix: state what happened. "We shipped X" not "We're excited to announce X."
+
+### W16 · "Whether you're X or Y" false inclusivity
+
+"Whether you're a startup founder or an enterprise CTO...", "Whether you're just getting started or scaling to millions..."
+
+Fix: pick the actual audience and speak to them directly.
+
+### W17 · Faux-conversational pivots
+
+"Here's the thing:", "Let me be clear:", "The truth is:", "Look:", "So here's what happened:".
+
+Fix: delete the pivot. Start with the substance.
+
+### W18 · Exclamation mark clusters
+
+Multiple exclamation marks in close proximity.
+
+Flag if: more than 1 in any paragraph, or more than 3 in the full document.
+
+Fix: remove all but the one that matters most.
+
+### W19 · Repetitive "You" sentence starters
+
+Multiple consecutive sentences or paragraphs starting with "You".
+
+Flag if: 3+ consecutive sentences begin with "You".
+
+Fix: vary sentence structure. Lead with the action, result, or situation.
+
+### W20 · The word "very"
+
+"Very" weakens specificity. "Very fast" is less precise than "fast" or a specific measurement.
+
+Fix: delete "very" or replace with a specific descriptor.
+
+### W21 · Corporate cliches
+
+Phrases that sound authoritative but say nothing specific.
+
+Target: "think outside the box", "move the needle", "growth mindset", "digital transformation", "synergy", "ecosystem", "paradigm shift", "disruptive", "thought leader", "best practices", "deep dive" (as a noun), "double down", "circle back", "take it to the next level", "game changer", "mission-critical".
+
+Fix: replace with a specific, concrete statement.
+
+### W22 · Hashtag blocks
+
+Blocks of 2+ `#CamelCase` hashtags appended to text.
+
+Fix: delete the hashtag block.
+
+### W23 · Emoji as emphasis
+
+Clusters of decorative emoji (rocket, fire, sparkle, lightbulb, star, checkmark, pointing finger) used for energy in marketing text.
+
+Flag if: 2+ emphasis emoji appear.
+
+Fix: delete the emoji. Let the words carry the weight.
+
+### W24 · Triple-value lists
+
+Three abstract virtues listed in "X, Y, and Z" form: "excellence, collaboration, and innovation". Sounds principled, says nothing concrete.
+
+Fix: pick the one that matters and say something specific about it.
+
+### W25 · Informal corporate slang
+
+Metaphorical business jargon: "circle back", "low-hanging fruit", "boil the ocean", "bandwidth" (used metaphorically), "deep dive", "touch base", "move the needle", "table this", "unpack this", "lean into".
+
+Fix: say what you mean in plain language.
+
+### W26 · Uncontracted forms
+
+"It is", "do not", "is not", "we are", "they have" used consistently with zero contractions anywhere. Produces stiff, formal prose.
+
+Flag if: 2+ uncontracted forms exist and no contractions appear in the entire text.
+
+Fix: use contractions. "It is" becomes "it's", "do not" becomes "don't".
+
+### W27 · Typographic quotes
+
+Curly/smart quotes and smart apostrophes instead of straight quotes. Keyboards produce straight quotes; AI models often output curly ones.
+
+Fix: replace curly quotes with straight quotes.
+
+### W28 · Repetitive word use
+
+Same distinctive word (5+ characters, excluding stopwords) appearing too often. Check two levels:
+
+- **Local clustering**: same word 3+ times within a single paragraph or short passage.
+- **Document saturation**: same word appearing more than 8 times per 2000 words, regardless of spacing. A word can pass every local check while still dominating the piece.
+
+Fix: use a synonym, restructure, or cut redundant sentences. For document-level saturation, the fix is often that the text is making the same point repeatedly (see also W31).
+
+### W29 · Sentence length uniformity
+
+4+ consecutive sentences all within 30% of their mean word count. AI tends to produce metronomic sentence lengths; real writing varies.
+
+Fix: vary sentence length. Mix short and long. A three-word sentence after a complex one creates rhythm.
+
+### W30 · Heading emoji
+
+Decorative emoji at the start of markdown headings: "## Getting Started", "### Key Takeaways".
+
+Fix: remove the emoji from the heading.
+
+### W31 · Repeated thematic points
+
+The same idea restated in different words at multiple points in the text. AI tends to re-derive its thesis in every section, producing multiple phrasings of one point rather than advancing the argument.
+
+Example — these three sentences from different sections all say the same thing:
+- "Each pattern is individually forgivable. Stacked together, they're a fingerprint."
+- "These don't scream AI on their own... they pile up into a recognizable texture."
+- "Any single instance means nothing. But when you see all of them, something feels off."
+
+Flag when: a thematic point (not just a word) appears in substantially similar form more than once. Pay attention to the "[one/single/individual] is [fine/nothing]. [Together/combined/stacked] they [signal/reveal]" structure, but don't limit detection to that template.
+
+Fix: say it once, in the strongest place. Delete or replace the weaker instances with points that advance the argument.
+
+### W32 · Internet cliches
+
+Phrases that were novel online circa 2015-2022 but have been strip-mined by AI models into cliche. They aren't corporate jargon (W21) or filler (W1) — they're internet-native expressions that AI reaches for as if they're still fresh.
+
+Target phrases:
+- "you can't unsee it/them"
+- "hits different"
+- "rent-free"
+- "chef's kiss"
+- "the quiet part out loud"
+- "I'm here for it"
+- "tell me you X without telling me you X"
+- "let that sink in"
+- "this is the way"
+- "say it louder for the people in the back"
+
+Fix: say what you actually mean. If the phrase is doing real work, replace it with a specific observation. If it's decoration, delete it.
+
+### W33 · Status-announcement openers
+
+Opening a message by labeling it as an update instead of giving the update. The reader can see it's an update; the label is runway before the substance. Common in emails and chat messages, in any language.
+
+Target patterns:
+- "Update:", "Quick update:", "Status update:", "Update from our side:"
+- "Just wanted to give you an update on...", "Wanted to share an update...", "Sharing a quick update..."
+- "Just a heads up:", "FYI:" followed by the actual news
+- Spanish: "Actualización:", "Actualización de nuestro lado:", "Os escribo para informaros de que...", "Quería comentaros que..."
+
+Also flag the two-part form where the label and the news are fused: "Update from our side: everything is now implemented." The first half is the label, the second half is the message.
+
+Fix: delete the label and open with the fact. "Actualización de nuestro lado: ya está todo implementado" becomes "Ya está todo implementado en Commerce Cloud." If the message needs context about scope ("this concerns X"), put that fact in the first sentence, not a label.
+
+Exception: a subject line or ticket title may legitimately be "Update on X" — this check applies to the body's opening sentence.
+
+### W34 · Topic-label paragraph openers
+
+Opening a paragraph by naming its topic with a label, then saying the actual thing in the next clause. The label is runway; the topic should be the grammatical subject of a sentence that says something.
+
+Target patterns:
+- "Regarding X:", "About X:", "On the subject of X:", "As for X,", "When it comes to X,"
+- Spanish: "Sobre X:", "En cuanto a X:", "Con respecto a X:", "En relación a X,"
+
+Often paired with a throat-clearing evaluation before the real point: "Regarding the SR: it's well structured, we'd just ask..." — the label plus an empty compliment delaying the request.
+
+Fix: make the topic the subject of a sentence that carries the information. "Sobre la SR 29731531: está bien planteada (añadir la red cubre lo necesario). Solo pedimos..." becomes "La SR 29731531 cubre lo necesario (añadir la red y verificar el routing). Solo falta una nota: ..." If the evaluation matters (e.g., it tells the reader not to redo work), fold it into the same sentence as fact, not as preamble.
+
+Exception: in a long document, a topic switch is a heading's job — use a heading, not an inline label.
+
+### W35 · Semicolons joining clauses
+
+Semicolons splicing two independent clauses: "the .140 host is the old mapping; the new flow uses .135". Grammatically fine, but almost nobody writes semicolons in emails, chat, or web copy — AI reaches for them constantly. Applies in any language.
+
+Flag if: any semicolon joins two clauses in conversational or professional-correspondence text. In formal long-form writing, flag when there's more than one per page.
+
+Fix: split into two sentences, or join with a comma plus connector if the clauses are short. "es el mapeo del ERP antiguo; el del flujo nuevo es X" becomes "es el mapeo del ERP antiguo. El del flujo nuevo es X."
+
+Exception: semicolons separating list items that contain internal commas, and semicolons in code.
+
+---
+
+## Severity classification
+
+**High** (instant AI tells — fix these first):
+W1 (filler phrases), W2 ("not X, it is Y"), W5 (marketing language), W6 (generic openings), W9 (paired adjectives), W15 (excited-to-announce), W16 (whether you're X or Y), W17 (faux-conversational pivots), W21 (corporate cliches), W24 (triple-value lists), W33 (status-announcement openers), W34 (topic-label paragraph openers)
+
+**Medium** (weaken the writing):
+W3 (em-dashes), W4 (rhetorical questions), W7 (passive voice), W8 (hedging), W10 (meta-references), W11 (mechanical transitions), W12 (bold emphasis), W13 (scare quotes), W14 (section-end summaries), W18 (exclamation clusters), W19 (repetitive "You"), W22 (hashtags), W23 (emoji), W25 (corporate slang), W26 (uncontracted forms), W30 (heading emoji), W32 (internet cliches), W35 (semicolons joining clauses)
+
+**Low** (statistical — matter in aggregate):
+W20 ("very"), W27 (typographic quotes), W28 (repetitive words), W29 (sentence length uniformity), W31 (repeated thematic points)
+
+---
+
+## Principles
+
+- Every rewrite must preserve the original meaning. Removing slop is not an excuse to change what the text says.
+- When fixing W5 (marketing language), the replacement must be specific and factual. "Powerful" cannot just become "strong" — it must become a concrete claim.
+- When fixing W2 ("not X, it is Y"), keep the Y. The positive statement is almost always the one that matters.
+- When multiple violations overlap in one sentence, rewrite the whole sentence once rather than fixing each pattern individually.
+- A clean text is not a bland text. The goal is writing with a specific voice and specific claims, not writing with all personality removed.

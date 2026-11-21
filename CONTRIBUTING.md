@@ -1,14 +1,27 @@
 # Contributing to PixelPlayerOSS
 
 Thanks for your interest in improving PixelPlayerOSS! This guide covers the
-conventions that aren't obvious from the code alone. For a deeper architectural
-overview, see [CLAUDE.md](CLAUDE.md) (written for AI assistants but accurate for
-humans too).
+conventions that aren't obvious from the code alone. The full rules are in
+[docs/agents/code-style.md](docs/agents/code-style.md), and the agent workflow in
+[AGENTS.md](AGENTS.md).
+
+## Where work comes from
+
+All work starts as a GitHub issue on this fork. We shape issues with
+[Matt Pocock's skills](https://github.com/mattpocock/skills). A spec issue holds the
+user stories. Its sub-issues are tickets. Each ticket has a triage label and can be
+blocked by other tickets. `ready-for-agent` means the ticket is fully specified, so
+a person or an agent session can do it.
+
+- Pick an open ticket labelled `ready-for-agent` that has no assignee and no open blockers.
+- Assign it to yourself before you start.
+- If a ticket does not tell you enough, say so on the issue. Do not guess.
+- Open issues and PRs on `srodriguezcode/PixelPlayerOSS`, not on the upstream repo.
 
 ## Getting started
 
 ```sh
-git clone https://github.com/PixelPlayerHQ/PixelPlayerOSS.git
+git clone https://github.com/srodriguezcode/PixelPlayerOSS.git
 cd PixelPlayerOSS
 
 # Universal debug APK for local installation
@@ -69,8 +82,8 @@ These are easy to get wrong and will come up in review:
 ## Pull requests
 
 - Keep changes focused; one logical change per PR.
+- Make one PR for each ticket, on a branch from `main`, and say which issue it closes.
 - Describe what changed and why, and include build/test results.
-- Do **not** add a `Co-Authored-By:` trailer to commits or PR bodies.
 
 ## Reporting bugs
 
