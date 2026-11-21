@@ -21,7 +21,7 @@ No hook or CI gate. Run these before handoff and paste the result in the PR:
 
 ## Shape
 
-- Names come from `GLOSSARY.md` when it exists. Use the term, never a word it lists under _Avoid_.
+- Names come from `GLOSSARY.md`. Use the term, never a word it lists under _Avoid_.
 - A variable of a `-Model` type drops the suffix: `val song: SongModel`, not `songModel`. `ViewModel` is not a `-Model` type here.
 - Deep modules: a lot of behaviour behind a small interface. Prefer small pure functions and plain data between modules.
 - No inline string literals in logic: preference keys, URLs, API paths, intent actions and SQL are named constants.
