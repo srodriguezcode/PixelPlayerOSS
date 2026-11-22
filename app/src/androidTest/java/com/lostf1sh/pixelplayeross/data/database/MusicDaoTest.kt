@@ -445,6 +445,31 @@ class MusicDaoTest {
         assertEquals(albumArtists, musicDao.getArtistsPageByAlbumArtist(allowed, true, 0, sort, 100, 0, minTracks = 3))
     }
 
+    @Test
+    fun artistsTab_listsOnlyPrimaryArtistsAndCountsOnlyTheirOwnSongs() = runTest {
+        val featuringSong = createSongEntity(1, "Duet", "Artist A", "Alpha", "/music/1.mp3")
+        val ownSong = createSongEntity(2, "Solo", "Artist B", "Beta", "/music/2.mp3", artistId = 102, albumId = 202)
+        insertSongsWithParents(listOf(featuringSong, ownSong))
+        val guestOnly = createArtistEntity(103, "Artist C")
+        musicDao.insertArtists(listOf(guestOnly))
+        musicDao.insertSongArtistCrossRefs(
+            listOf(
+                SongArtistCrossRef(songId = 1, artistId = 101, isPrimary = true),
+                SongArtistCrossRef(songId = 1, artistId = 102, isPrimary = false),
+                SongArtistCrossRef(songId = 1, artistId = 103, isPrimary = false),
+                SongArtistCrossRef(songId = 2, artistId = 102, isPrimary = true)
+            )
+        )
+        val sort = "artist_name_az"
+
+        val listed = musicDao.getArtistsPaginated(emptyList(), false, 0, sort).loadArtists()
+        assertEquals(listOf(101L to 1, 102L to 1), listed.map { it.id to it.trackCount })
+        assertEquals(listed, musicDao.getArtistsPage(emptyList(), false, 0, sort, 100, 0))
+
+        assertEquals(emptyList<Long>(), musicDao.getArtistsPaginated(emptyList(), false, 0, sort, minTracks = 2).loadArtists().map(ArtistEntity::id))
+        assertEquals(emptyList<ArtistEntity>(), musicDao.getArtistsPage(emptyList(), false, 0, sort, 100, 0, minTracks = 2))
+    }
+
     private suspend fun PagingSource<Int, ArtistEntity>.loadArtists(): List<ArtistEntity> {
         val result = load(PagingSource.LoadParams.Refresh(key = null, loadSize = 100, placeholdersEnabled = false))
         return (result as PagingSource.LoadResult.Page<Int, ArtistEntity>).data
