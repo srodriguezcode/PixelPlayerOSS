@@ -1,6 +1,7 @@
 package com.lostf1sh.pixelplayeross.presentation.viewmodel
 
 import com.google.common.truth.Truth.assertThat
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import org.junit.jupiter.api.Test
 
 class ArtistAlbumSectionExpansionTest {
@@ -72,6 +73,23 @@ class ArtistAlbumSectionExpansionTest {
         assertThat(isAnyAlbumSectionExpanded(keys, mapOf("b" to true), collapsedByDefault = true)).isTrue()
         // Overrides left over for albums that are not listed do not count.
         assertThat(isAnyAlbumSectionExpanded(keys, mapOf("gone" to true), collapsedByDefault = true)).isFalse()
+    }
+
+    @Test
+    fun `releases in different groups count together, so one album and one single both start collapsed`() {
+        val groups = groupReleaseSections(
+            listOf(section(albumId = 1L, title = "Neon Ritual"), section(albumId = 2L, title = "Glad")),
+            mapOf(1L to ReleaseType.ALBUM, 2L to ReleaseType.SINGLE)
+        )
+        val keys = groups.flatMap { it.sections }.map { it.collapseKey() }
+
+        assertThat(groups.map { it.sections.size }).containsExactly(1, 1)
+        keys.forEach { key ->
+            assertThat(
+                isAlbumSectionExpanded(key, overrides = emptyMap(), collapsedByDefault = true, sectionCount = keys.size)
+            ).isFalse()
+        }
+        assertThat(isAnyAlbumSectionExpanded(keys, overrides = emptyMap(), collapsedByDefault = true)).isFalse()
     }
 
     @Test
