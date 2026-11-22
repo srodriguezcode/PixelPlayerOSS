@@ -5,7 +5,7 @@ Use these terms in code, issues and UI text.
 ## Library
 
 **Song**
-One audio item that the app can play. It has a title, one or more artists, an album and a duration.
+One audio item that the app can play. It has a title, one or more artists, a release and a duration.
 _Avoid_: track, tune, item
 
 **Library**
@@ -16,8 +16,28 @@ _Avoid_: collection, catalog
 A song from a file on the phone.
 _Avoid_: device song, offline song
 
+**Release**
+A group of songs that an artist publishes together: an album, an EP or a single.
+_Avoid_: record, disc, album (when you mean any release)
+
+**Release type**
+The kind of a release: Album, EP or Single. It comes from a tag in the files. A release without this tag has no release type.
+_Avoid_: album type, format
+
+**Album**
+A full-length release. The release type that is not EP or Single.
+_Avoid_: LP, full album
+
+**EP**
+A short release, longer than a single and shorter than an album.
+_Avoid_: mini album
+
+**Single**
+A release with one main song, and sometimes a small number of other versions or songs.
+_Avoid_: one-track album
+
 **Album artist**
-The artist of the full album. It can be different from the artist of one song on that album.
+The artist of the full release. It can be different from the artist of one song on that release.
 _Avoid_: main artist
 
 **Favorite**
