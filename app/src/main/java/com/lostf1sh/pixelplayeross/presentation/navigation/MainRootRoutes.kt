@@ -13,3 +13,15 @@ internal fun mainRootRouteIndex(route: String?): Int? = when (route) {
     Screen.Library.route -> 2
     else -> null
 }
+
+/** The tab whose stack is on screen: the nearest tab root below the top of [backStackRoutes]. */
+internal fun currentTabRoute(backStackRoutes: List<String?>): String? =
+    backStackRoutes.lastOrNull(::isMainRootRoute)
+
+internal enum class MainTabTap { SwitchTab, PopToTabRoot, None }
+
+internal fun resolveMainTabTap(tabRoute: String, currentRoute: String?, currentTabRoute: String?): MainTabTap = when {
+    currentTabRoute != tabRoute -> MainTabTap.SwitchTab
+    currentRoute == tabRoute -> MainTabTap.None
+    else -> MainTabTap.PopToTabRoot
+}

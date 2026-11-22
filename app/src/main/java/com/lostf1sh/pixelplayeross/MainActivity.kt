@@ -141,6 +141,7 @@ import com.lostf1sh.pixelplayeross.presentation.components.resolveNavBarSurfaceH
 import com.lostf1sh.pixelplayeross.presentation.components.sanitizeNavigationBarBottomInset
 import com.lostf1sh.pixelplayeross.presentation.navigation.AppNavigation
 import com.lostf1sh.pixelplayeross.presentation.navigation.Screen
+import com.lostf1sh.pixelplayeross.presentation.navigation.currentTabRouteAsState
 import com.lostf1sh.pixelplayeross.presentation.screens.SetupScreen
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.MainViewModel
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.PlayerViewModel
@@ -699,6 +700,7 @@ class MainActivity : ComponentActivity() {
     ) = traceSection("MainActivity.MainUI") {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
+        val currentTabRoute by navController.currentTabRouteAsState()
         var isSearchBarActive by rememberSaveable { mutableStateOf(false) }
         val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
         val useNavigationRail =
@@ -946,6 +948,7 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 navItems = MainNavItems,
                                 currentRoute = currentRoute,
+                                currentTabRoute = currentTabRoute,
                                 onSearchIconDoubleTap = onSearchIconDoubleTap
                             )
                         }
@@ -1201,6 +1204,7 @@ class MainActivity : ComponentActivity() {
                                     navController = navController,
                                     navItems = MainNavItems,
                                     currentRoute = currentRoute,
+                                    currentTabRoute = currentTabRoute,
                                     navBarStyle = navBarStyle,
                                     compactMode = navBarCompactMode,
                                     bottomBarPadding = bottomBarPadding,
