@@ -93,12 +93,13 @@ class NavidromeCoilFetcher(
             return null
         }
 
+        // Before the login check: offline copies keep their covers after logout.
+        OfflineCopyCovers.savedResult(filesDir, RemoteArtworkCache.NAVIDROME_COVER_SCHEME, coverArtId)?.let { return it }
+
         if (!repository.isLoggedIn) {
             Timber.v("$TAG: Not logged in, skipping fetch")
             return null
         }
-
-        OfflineCopyCovers.savedResult(filesDir, RemoteArtworkCache.NAVIDROME_COVER_SCHEME, coverArtId)?.let { return it }
 
         val sizeParam = resolveCloudCoverSize(
             explicitSizeParam = uri.getQueryParameter("size")?.toIntOrNull(),

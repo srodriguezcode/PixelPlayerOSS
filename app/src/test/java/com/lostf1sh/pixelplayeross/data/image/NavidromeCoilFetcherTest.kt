@@ -152,4 +152,16 @@ class NavidromeCoilFetcherTest {
         assertThat((result as SourceResult).source.file().toString()).isEqualTo(saved.absolutePath)
         assertThat(cacheDir.listFiles()).isEmpty()
     }
+
+    @Test
+    fun `saved cover of an offline copy is served after logout`() = runTest {
+        val saved = OfflineCopyCovers.fileFor(filesDir, "navidrome_cover", "al-12")
+            .apply { parentFile!!.mkdirs() }
+        saved.writeBytes(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47))
+        every { repository.isLoggedIn } returns false
+
+        val result = NavidromeCoilFetcher(coverUri, repository, OkHttpClient(), cacheDir, filesDir).fetch()
+
+        assertThat((result as SourceResult).source.file().toString()).isEqualTo(saved.absolutePath)
+    }
 }
