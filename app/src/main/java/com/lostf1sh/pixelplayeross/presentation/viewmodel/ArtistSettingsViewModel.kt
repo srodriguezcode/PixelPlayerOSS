@@ -19,7 +19,7 @@ data class ArtistSettingsUiState(
     val wordDelimiters: List<String> = UserPreferencesRepository.DEFAULT_ARTIST_WORD_DELIMITERS,
     val extractArtistsFromTitle: Boolean = true,
     val groupByAlbumArtist: Boolean = false,
-    val albumsCollapsedByDefault: Boolean = false,
+    val albumsCollapsedByDefault: Boolean = UserPreferencesRepository.DEFAULT_ARTIST_ALBUMS_COLLAPSED,
     val rescanRequired: Boolean = false,
     val isResyncing: Boolean = false
 )

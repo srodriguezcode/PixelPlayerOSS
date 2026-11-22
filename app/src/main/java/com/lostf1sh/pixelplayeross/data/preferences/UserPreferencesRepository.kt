@@ -594,7 +594,8 @@ constructor(
     /** Display-only: the artist page reads it when it opens, so no rescan is needed. */
     val artistAlbumsCollapsedByDefaultFlow: Flow<Boolean> =
             dataStore.data.map { preferences ->
-                preferences[PreferencesKeys.ARTIST_ALBUMS_COLLAPSED_BY_DEFAULT] ?: false
+                preferences[PreferencesKeys.ARTIST_ALBUMS_COLLAPSED_BY_DEFAULT]
+                    ?: DEFAULT_ARTIST_ALBUMS_COLLAPSED
             }.distinctUntilChanged()
 
     suspend fun setArtistAlbumsCollapsedByDefault(collapsed: Boolean) {
@@ -1526,6 +1527,8 @@ constructor(
         val DEFAULT_ARTIST_DELIMITERS = listOf("/", ";", ",", "+", "&")
         /** Default word-based delimiters (matched case-insensitively with whitespace boundaries) */
         val DEFAULT_ARTIST_WORD_DELIMITERS = listOf("featuring", "feat.", "feat", "ft.", "ft", "vs.", "vs", "versus", "with", "prod.", "prod")
+        /** Artist page releases start collapsed unless the user turned it off */
+        const val DEFAULT_ARTIST_ALBUMS_COLLAPSED = true
         const val DEFAULT_ALBUM_ART_CACHE_LIMIT_MB = 200
 
         /**

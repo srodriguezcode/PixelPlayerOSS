@@ -50,7 +50,7 @@ data class ArtistDetailUiState(
     val songs: List<Song> = emptyList(),
     val albumSections: List<ArtistAlbumSection> = emptyList(),
     val releaseGroups: List<ArtistReleaseGroup> = emptyList(),
-    val albumsCollapsedByDefault: Boolean = false,
+    val albumsCollapsedByDefault: Boolean = UserPreferencesRepository.DEFAULT_ARTIST_ALBUMS_COLLAPSED,
     val effectiveImageUrl: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null

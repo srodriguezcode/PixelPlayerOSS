@@ -285,7 +285,7 @@ class UserPreferencesRepositoryTest {
     }
 
     @Test
-    fun `artist albums collapsed by default is off by default and persists`() = runTest {
+    fun `artist albums collapsed by default is on by default and persists`() = runTest {
         val tempDir = Files.createTempDirectory("user-preferences-repository-test")
         try {
             val repository = UserPreferencesRepository(
@@ -296,13 +296,13 @@ class UserPreferencesRepositoryTest {
                 json = Json
             )
 
-            assertEquals(false, repository.artistAlbumsCollapsedByDefaultFlow.first())
-
-            repository.setArtistAlbumsCollapsedByDefault(true)
             assertTrue(repository.artistAlbumsCollapsedByDefaultFlow.first())
 
             repository.setArtistAlbumsCollapsedByDefault(false)
             assertEquals(false, repository.artistAlbumsCollapsedByDefaultFlow.first())
+
+            repository.setArtistAlbumsCollapsedByDefault(true)
+            assertTrue(repository.artistAlbumsCollapsedByDefaultFlow.first())
         } finally {
             tempDir.toFile().deleteRecursively()
         }
