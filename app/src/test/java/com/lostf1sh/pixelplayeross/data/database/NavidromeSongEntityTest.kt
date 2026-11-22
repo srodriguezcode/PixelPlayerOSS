@@ -1,6 +1,7 @@
 package com.lostf1sh.pixelplayeross.data.database
 
 import com.google.common.truth.Truth.assertThat
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.navidrome.model.NavidromeSong
 import org.junit.jupiter.api.Test
 
@@ -73,5 +74,20 @@ class NavidromeSongEntityTest {
             .toEntity(playlistId = "__library__", nowMs = 1_800_000_000_000L)
 
         assertThat(entity.dateAdded).isEqualTo(1_800_000_000_000L)
+    }
+
+    @Test
+    fun `toEntity carries the release type of its album`() {
+        val entity = navidromeSong(created = 0L)
+            .toEntity(playlistId = "__library__", releaseType = ReleaseType.EP)
+
+        assertThat(entity.releaseType).isEqualTo(ReleaseType.EP)
+    }
+
+    @Test
+    fun `toEntity has no release type by default`() {
+        val entity = navidromeSong(created = 0L).toEntity(playlistId = "playlist-1")
+
+        assertThat(entity.releaseType).isEqualTo(ReleaseType.NONE)
     }
 }

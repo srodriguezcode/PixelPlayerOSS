@@ -101,7 +101,8 @@ fun NavidromeSongEntity.toSong(): Song {
  */
 fun NavidromeSong.toEntity(
     playlistId: String,
-    nowMs: Long = System.currentTimeMillis()
+    nowMs: Long = System.currentTimeMillis(),
+    releaseType: ReleaseType = ReleaseType.NONE
 ): NavidromeSongEntity {
     return NavidromeSongEntity(
         id = "${playlistId}_$id",
@@ -123,6 +124,7 @@ fun NavidromeSong.toEntity(
         mimeType = resolvedMimeType,
         suffix = suffix,
         path = path,
-        dateAdded = dateAddedOr(nowMs)
+        dateAdded = dateAddedOr(nowMs),
+        releaseType = releaseType
     )
 }

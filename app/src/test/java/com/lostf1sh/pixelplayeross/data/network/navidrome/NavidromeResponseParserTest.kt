@@ -72,4 +72,16 @@ class NavidromeResponseParserTest {
         assertThat(NavidromeResponseParser.parseSong(emptyList).genre).isEqualTo("Jazz")
         assertThat(NavidromeResponseParser.parseSong(song(null)).genre).isNull()
     }
+
+    @Test
+    fun `release types are read from the album object`() {
+        val album = JSONObject().put("id", "album-1").put("releaseTypes", JSONArray(listOf("ep", "live")))
+
+        assertThat(NavidromeResponseParser.parseReleaseTypes(album)).containsExactly("ep", "live").inOrder()
+    }
+
+    @Test
+    fun `release types are empty when the server omits them`() {
+        assertThat(NavidromeResponseParser.parseReleaseTypes(JSONObject().put("id", "album-1"))).isEmpty()
+    }
 }

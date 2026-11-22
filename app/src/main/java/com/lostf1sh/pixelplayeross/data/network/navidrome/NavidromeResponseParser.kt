@@ -16,6 +16,7 @@ import timber.log.Timber
 object NavidromeResponseParser {
 
     private const val TAG = "NavidromeParser"
+    private const val RELEASE_TYPES_KEY = "releaseTypes"
 
     /**
      * Parse a music folder from JSON.
@@ -81,6 +82,13 @@ object NavidromeResponseParser {
         }.orEmpty()
         return GenreParser.joinValues(genreNames)
             ?: json.optString("genre").takeIf { it.isNotEmpty() }
+    }
+
+    fun parseReleaseTypes(json: JSONObject): List<String> {
+        val array = json.optJSONArray(RELEASE_TYPES_KEY) ?: return emptyList()
+        return (0 until array.length()).mapNotNull { index ->
+            array.optString(index).takeIf { it.isNotEmpty() }
+        }
     }
 
     /**

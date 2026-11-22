@@ -37,6 +37,13 @@ private fun buildSongSearchMatchQuery(query: String): String {
     return tokens.joinToString(separator = " AND ") { "${it}*" }
 }
 
+private const val ALBUM_RELEASE_TYPE_VALUE = "ALBUM"
+
+/** Only Navidrome releases carry a release type, so local and Jellyfin releases pass. */
+private const val ALBUMS_TAB_RELEASE_TYPE_FILTER = """
+    AND (songs.source_type != ${SourceType.NAVIDROME} OR albums.release_type = '$ALBUM_RELEASE_TYPE_VALUE')
+"""
+
 private const val SONG_DETAIL_PROJECTION = """
     songs.id AS id,
     songs.title AS title,
@@ -1140,6 +1147,7 @@ interface MusicDao {
                 AND songs.source_type != 0
             )
         )
+        $ALBUMS_TAB_RELEASE_TYPE_FILTER
         GROUP BY
             albums.id,
             albums.title,
@@ -1186,6 +1194,7 @@ interface MusicDao {
                 AND songs.source_type != 0
             )
         )
+        $ALBUMS_TAB_RELEASE_TYPE_FILTER
         GROUP BY
             albums.id,
             albums.title,
@@ -1245,6 +1254,7 @@ interface MusicDao {
                 AND songs.source_type != 0
             )
         )
+        $ALBUMS_TAB_RELEASE_TYPE_FILTER
         GROUP BY
             albums.id,
             albums.title,

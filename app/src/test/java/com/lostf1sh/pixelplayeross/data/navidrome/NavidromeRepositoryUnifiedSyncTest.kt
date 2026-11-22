@@ -1,11 +1,13 @@
 package com.lostf1sh.pixelplayeross.data.navidrome
 
 import com.google.common.truth.Truth.assertThat
+import com.lostf1sh.pixelplayeross.data.database.AlbumEntity
 import com.lostf1sh.pixelplayeross.data.database.MusicDao
 import com.lostf1sh.pixelplayeross.data.database.NavidromeDao
 import com.lostf1sh.pixelplayeross.data.database.NavidromeSongEntity
 import com.lostf1sh.pixelplayeross.data.database.SongEntity
 import com.lostf1sh.pixelplayeross.data.database.SourceType
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.preferences.UserPreferencesRepository
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -23,12 +25,13 @@ class NavidromeRepositoryUnifiedSyncTest {
     private val musicDao: MusicDao = mockk()
     private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private val syncedSongs = slot<List<SongEntity>>()
+    private val syncedAlbums = slot<List<AlbumEntity>>()
 
     private fun repository(): NavidromeRepository {
         every { userPreferencesRepository.groupByAlbumArtistFlow } returns flowOf(true)
         coEvery { musicDao.getAllNavidromeSongIds() } returns emptyList()
         coEvery {
-            musicDao.incrementalSyncMusicData(capture(syncedSongs), any(), any(), any(), any())
+            musicDao.incrementalSyncMusicData(capture(syncedSongs), capture(syncedAlbums), any(), any(), any())
         } just Runs
         return NavidromeRepository(
             api = mockk(relaxed = true),
@@ -40,11 +43,18 @@ class NavidromeRepositoryUnifiedSyncTest {
         )
     }
 
-    private fun cachedSong(navidromeId: String, title: String, track: Int, disc: Int) =
+    private fun cachedSong(
+        navidromeId: String,
+        title: String,
+        track: Int,
+        disc: Int,
+        playlistId: String = NavidromeRepository.LIBRARY_PLAYLIST_ID,
+        releaseType: ReleaseType = ReleaseType.NONE
+    ) =
         NavidromeSongEntity(
-            id = "${NavidromeRepository.LIBRARY_PLAYLIST_ID}_$navidromeId",
+            id = "${playlistId}_$navidromeId",
             navidromeId = navidromeId,
-            playlistId = NavidromeRepository.LIBRARY_PLAYLIST_ID,
+            playlistId = playlistId,
             title = title,
             artist = "Artist",
             artistId = "artist-1",
@@ -61,7 +71,8 @@ class NavidromeRepositoryUnifiedSyncTest {
             mimeType = "audio/mpeg",
             suffix = "mp3",
             path = "Artist/Double Album/$navidromeId.mp3",
-            dateAdded = 1_700_000_000_000L
+            dateAdded = 1_700_000_000_000L,
+            releaseType = releaseType
         )
 
     @Test
@@ -97,5 +108,39 @@ class NavidromeRepositoryUnifiedSyncTest {
         repository().syncUnifiedLibrarySongsFromNavidrome()
 
         assertThat(syncedSongs.captured.single().discNumber).isNull()
+    }
+
+    @Test
+    fun `unified library sync copies the release type onto the album`() = runTest {
+        coEvery { navidromeDao.getAllNavidromeSongsList() } returns listOf(
+            cachedSong("t1", "Track 1", track = 1, disc = 1, releaseType = ReleaseType.EP),
+            cachedSong("t2", "Track 2", track = 2, disc = 1, releaseType = ReleaseType.EP)
+        )
+
+        repository().syncUnifiedLibrarySongsFromNavidrome()
+
+        assertThat(syncedAlbums.captured.single().releaseType).isEqualTo(ReleaseType.EP)
+    }
+
+    @Test
+    fun `playlist rows without a release type do not hide the library release type`() = runTest {
+        val playlistRow = cachedSong("t1", "Track 1", track = 1, disc = 1, playlistId = "playlist-1")
+        val libraryRow = cachedSong("t1", "Track 1", track = 1, disc = 1, releaseType = ReleaseType.ALBUM)
+        coEvery { navidromeDao.getAllNavidromeSongsList() } returns listOf(playlistRow, libraryRow)
+
+        repository().syncUnifiedLibrarySongsFromNavidrome()
+
+        assertThat(syncedAlbums.captured.single().releaseType).isEqualTo(ReleaseType.ALBUM)
+    }
+
+    @Test
+    fun `album with no release type stays none`() = runTest {
+        coEvery { navidromeDao.getAllNavidromeSongsList() } returns listOf(
+            cachedSong("t1", "Track 1", track = 1, disc = 1)
+        )
+
+        repository().syncUnifiedLibrarySongsFromNavidrome()
+
+        assertThat(syncedAlbums.captured.single().releaseType).isEqualTo(ReleaseType.NONE)
     }
 }
