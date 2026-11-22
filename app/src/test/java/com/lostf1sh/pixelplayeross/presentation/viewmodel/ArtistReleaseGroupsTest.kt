@@ -1,6 +1,7 @@
 package com.lostf1sh.pixelplayeross.presentation.viewmodel
 
 import com.lostf1sh.pixelplayeross.data.model.ReleaseType
+import com.lostf1sh.pixelplayeross.data.model.Song
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -79,9 +80,37 @@ class ArtistReleaseGroupsTest {
     }
 
     @Test
+    fun `songs in any order give newest release first in each group`() {
+        val songs = listOf(
+            song("a", "Paper Boats", 5L, 2018),
+            song("b", "Neon Ritual", 1L, 2023),
+            song("c", "Undated Demos", 6L, 0),
+            song("d", "Low Tide", 2L, 2021),
+            song("e", "Glad EP", 3L, 2020)
+        )
+
+        val groups = groupReleaseSections(
+            buildAlbumSections(songs),
+            mapOf(5L to ReleaseType.ALBUM, 1L to ReleaseType.ALBUM, 6L to ReleaseType.ALBUM, 3L to ReleaseType.EP)
+        )
+
+        assertEquals(listOf("Neon Ritual", "Paper Boats", "Undated Demos"), groups[0].sections.map { it.title })
+        assertEquals(listOf("Glad EP"), groups[1].sections.map { it.title })
+        assertEquals(listOf("Low Tide"), groups[2].sections.map { it.title })
+    }
+
+    @Test
     fun `no sections give no groups`() {
         assertTrue(groupReleaseSections(emptyList(), emptyMap()).isEmpty())
     }
+
+    private fun song(id: String, album: String, albumId: Long, year: Int) = Song.emptySong().copy(
+        id = id,
+        title = "Track $id",
+        album = album,
+        albumId = albumId,
+        year = year
+    )
 
     private fun section(albumId: Long, title: String, year: Int) = ArtistAlbumSection(
         albumId = albumId,

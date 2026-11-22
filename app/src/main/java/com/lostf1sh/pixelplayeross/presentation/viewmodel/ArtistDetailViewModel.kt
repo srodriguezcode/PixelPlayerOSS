@@ -48,7 +48,6 @@ import javax.inject.Inject
 data class ArtistDetailUiState(
     val artist: Artist? = null,
     val songs: List<Song> = emptyList(),
-    /** Every release section in page order: [releaseGroups] flattened. */
     val albumSections: List<ArtistAlbumSection> = emptyList(),
     val releaseGroups: List<ArtistReleaseGroup> = emptyList(),
     val albumsCollapsedByDefault: Boolean = false,
@@ -316,11 +315,6 @@ class ArtistDetailViewModel @Inject constructor(
 
     fun removeSongFromAlbumSection(songId: String) {
         val updatedState = _uiState.updateAndGet { currentState ->
-            val updatedAlbumSections = currentState.albumSections.map { section ->
-                val updatedSongs = section.songs.filterNot { it.id == songId }
-                section.copy(songs = updatedSongs)
-            }.filter { it.songs.isNotEmpty() }
-
             val updatedGroups = currentState.releaseGroups
                 .map { group ->
                     group.copy(
@@ -332,7 +326,7 @@ class ArtistDetailViewModel @Inject constructor(
                 .filter { it.sections.isNotEmpty() }
 
             currentState.copy(
-                albumSections = updatedAlbumSections,
+                albumSections = updatedGroups.flatMap { it.sections },
                 releaseGroups = updatedGroups,
                 songs = currentState.songs.filterNot { it.id == songId }
             )

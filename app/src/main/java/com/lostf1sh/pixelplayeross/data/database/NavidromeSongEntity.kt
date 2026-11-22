@@ -33,7 +33,6 @@ import com.lostf1sh.pixelplayeross.data.stream.CloudMusicUtils
  * @property path The file path on the server
  * @property dateAdded When the song was added to the server library (epoch millis), falling back
  * to the time it was cached when the server does not report it
- * @property releaseType The release type of the song's release, from the album that the sync read it from
  */
 @Entity(
     tableName = "navidrome_songs",

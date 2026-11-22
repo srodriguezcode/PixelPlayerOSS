@@ -195,7 +195,7 @@ interface MusicRepository {
      */
     fun getAlbumById(id: Long): Flow<Album?>
 
-    /** Release type by album ID. An album missing from the result has no row in the library. */
+    /** An album missing from the result has no row in the library. */
     fun getAlbumReleaseTypes(albumIds: List<Long>): Flow<Map<Long, ReleaseType>>
 
     /**

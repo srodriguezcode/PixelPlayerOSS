@@ -78,10 +78,10 @@ class NavidromeRepository @Inject constructor(
         private const val KEY_PASSWORD = "password"
         private const val KEY_AUTH_METHOD = "auth_method"
         private const val KEY_LAST_FULL_SYNC = "last_full_sync"
-        private const val KEY_LIBRARY_SYNC_FORMAT = "library_sync_format"
+        private const val KEY_LIBRARY_SYNC_VERSION = "library_sync_version"
 
-        /** Bump when the library sync stores a new field, so existing installs run one full sync. 1: release types (#6). */
-        private const val LIBRARY_SYNC_FORMAT = 1
+        /** Bump when sync stores a new field, so installs re-sync once. 1: release types (#6). */
+        private const val LIBRARY_SYNC_VERSION = 1
 
         private const val NAVIDROME_SONG_ID_OFFSET = 9_000_000_000_000L
         private const val NAVIDROME_ALBUM_ID_OFFSET = 10_000_000_000_000L
@@ -180,15 +180,15 @@ class NavidromeRepository @Inject constructor(
         userPreferencesRepository.navidromeSelectedMusicFolderIdsFlow
 
     var lastFullSyncTime: Long
-        get() = if (prefs.getInt(KEY_LIBRARY_SYNC_FORMAT, 0) < LIBRARY_SYNC_FORMAT) {
-            0L
-        } else {
-            prefs.getLong(KEY_LAST_FULL_SYNC, 0L)
-        }
+        get() = prefs.getLong(KEY_LAST_FULL_SYNC, 0L)
         set(value) = prefs.edit {
             putLong(KEY_LAST_FULL_SYNC, value)
-            putInt(KEY_LIBRARY_SYNC_FORMAT, LIBRARY_SYNC_FORMAT)
+            putInt(KEY_LIBRARY_SYNC_VERSION, LIBRARY_SYNC_VERSION)
         }
+
+    fun isFullSyncDue(nowMs: Long = System.currentTimeMillis()): Boolean =
+        prefs.getInt(KEY_LIBRARY_SYNC_VERSION, 0) < LIBRARY_SYNC_VERSION ||
+            nowMs - lastFullSyncTime >= SYNC_THRESHOLD_MS
 
     /**
      * Login to Navidrome server with credentials.
