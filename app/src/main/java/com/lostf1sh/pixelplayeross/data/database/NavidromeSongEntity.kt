@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.model.Song
 import com.lostf1sh.pixelplayeross.data.navidrome.NavidromeSongUri
 import com.lostf1sh.pixelplayeross.data.navidrome.model.NavidromeSong
@@ -61,7 +62,9 @@ data class NavidromeSongEntity(
     @ColumnInfo(name = "mime_type") val mimeType: String?,
     val suffix: String?,
     val path: String,
-    @ColumnInfo(name = "date_added") val dateAdded: Long
+    @ColumnInfo(name = "date_added") val dateAdded: Long,
+    @ColumnInfo(name = "release_type", defaultValue = RELEASE_TYPE_DEFAULT_SQL)
+    val releaseType: ReleaseType = ReleaseType.NONE
 )
 
 /**
@@ -97,7 +100,8 @@ fun NavidromeSongEntity.toSong(): Song {
  */
 fun NavidromeSong.toEntity(
     playlistId: String,
-    nowMs: Long = System.currentTimeMillis()
+    nowMs: Long = System.currentTimeMillis(),
+    releaseType: ReleaseType = ReleaseType.NONE
 ): NavidromeSongEntity {
     return NavidromeSongEntity(
         id = "${playlistId}_$id",
@@ -119,6 +123,7 @@ fun NavidromeSong.toEntity(
         mimeType = resolvedMimeType,
         suffix = suffix,
         path = path,
-        dateAdded = dateAddedOr(nowMs)
+        dateAdded = dateAddedOr(nowMs),
+        releaseType = releaseType
     )
 }

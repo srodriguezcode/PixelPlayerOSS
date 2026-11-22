@@ -105,9 +105,11 @@ import androidx.window.core.layout.WindowSizeClass
 import com.lostf1sh.pixelplayeross.presentation.navigation.Screen
 import com.lostf1sh.pixelplayeross.presentation.selection.DetailSongSelection
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.ArtistDetailViewModel
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.ArtistAlbumSection
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.PlayerViewModel
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.collapseKey
+import com.lostf1sh.pixelplayeross.presentation.viewmodel.showsGroupTitles
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.isAlbumSectionExpanded
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.isAnyAlbumSectionExpanded
 import com.lostf1sh.pixelplayeross.presentation.viewmodel.PlaylistViewModel
@@ -395,6 +397,16 @@ fun ArtistDetailScreen(
                     }
                     val visibleSections = remember(albumSections) { albumSections.filter { it.songs.isNotEmpty() } }
                     val visibleSectionKeys = remember(visibleSections) { visibleSections.map { it.collapseKey() } }
+                    val groupTitleBySectionKey = remember(uiState.releaseGroups) {
+                        if (uiState.releaseGroups.showsGroupTitles()) {
+                            uiState.releaseGroups.mapNotNull { group ->
+                                group.sections.firstOrNull { it.songs.isNotEmpty() }
+                                    ?.let { it.collapseKey() to group.type }
+                            }.toMap()
+                        } else {
+                            emptyMap()
+                        }
+                    }
                     val albumCount = visibleSections.size
                     val albumCountLabel = if (albumCount == 1) {
                         stringResource(R.string.detail_hero_album_count_one)
@@ -529,6 +541,18 @@ fun ArtistDetailScreen(
                             val isLastSection = index == visibleSections.lastIndex
                             val isExpanded = isSectionExpanded(sectionKey)
                             val sectionSongs = displayedSongs(section)
+
+                            groupTitleBySectionKey[sectionKey]?.let { groupType ->
+                                item(
+                                    key = "artist_group_title_${groupType.name}",
+                                    contentType = "artist_group_title"
+                                ) {
+                                    ArtistReleaseGroupTitle(
+                                        type = groupType,
+                                        modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
+                                    )
+                                }
+                            }
 
                             item(
                                 key = "${sectionKey}_header",
@@ -817,6 +841,23 @@ fun ArtistDetailScreen(
 
 private val SectionOuterCorner = 24.dp
 private val SectionInnerCorner = 8.dp
+
+@Composable
+private fun ArtistReleaseGroupTitle(type: ReleaseType, modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(
+            when (type) {
+                ReleaseType.ALBUM -> R.string.artist_page_group_albums
+                ReleaseType.EP -> R.string.artist_page_group_eps
+                ReleaseType.SINGLE -> R.string.artist_page_group_singles
+                ReleaseType.NONE -> R.string.artist_page_group_other_releases
+            }
+        ),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier
+    )
+}
 
 /** "Collapse all" while any album shows its songs, "Expand all" once every album is collapsed. */
 @Composable

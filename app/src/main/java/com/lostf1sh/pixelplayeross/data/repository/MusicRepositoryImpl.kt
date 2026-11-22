@@ -35,6 +35,7 @@ import com.lostf1sh.pixelplayeross.data.model.Lyrics
 import com.lostf1sh.pixelplayeross.data.model.LyricsSourcePreference
 import com.lostf1sh.pixelplayeross.data.model.MusicFolder
 import com.lostf1sh.pixelplayeross.data.model.Playlist
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.model.SearchFilterType
 import com.lostf1sh.pixelplayeross.data.model.SearchHistoryItem
 import com.lostf1sh.pixelplayeross.data.model.SearchResultItem
@@ -453,6 +454,11 @@ class MusicRepositoryImpl @Inject constructor(
 
     override fun getAlbumById(id: Long): Flow<Album?> {
         return musicDao.getAlbumById(id).map { it?.toAlbum() }
+    }
+
+    override fun getAlbumReleaseTypes(albumIds: List<Long>): Flow<Map<Long, ReleaseType>> {
+        return musicDao.getAlbumReleaseTypes(albumIds)
+            .map { rows -> rows.associate { it.albumId to it.releaseType } }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

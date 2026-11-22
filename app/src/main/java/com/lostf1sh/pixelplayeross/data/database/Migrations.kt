@@ -204,5 +204,15 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `offline_tracks` ADD COLUMN `song_cover_uri` TEXT")
         db.execSQL("ALTER TABLE `offline_tracks` ADD COLUMN `album_cover_uri` TEXT")
+        db.execSQL(
+            "ALTER TABLE `navidrome_songs` ADD COLUMN `release_type` TEXT NOT NULL " +
+                "DEFAULT $RELEASE_TYPE_DEFAULT_SQL"
+        )
+        db.execSQL(
+            "ALTER TABLE `albums` ADD COLUMN `release_type` TEXT NOT NULL " +
+                "DEFAULT $RELEASE_TYPE_DEFAULT_SQL"
+        )
     }
 }
+
+const val RELEASE_TYPE_DEFAULT_SQL = "'NONE'"

@@ -14,8 +14,7 @@ class CloudSyncCoordinator @Inject constructor(
     private val workManager: WorkManager
 ) {
     val needsActiveCloudSync: Boolean
-        get() = navidromeRepository.isLoggedIn &&
-            (System.currentTimeMillis() - navidromeRepository.lastFullSyncTime >= NavidromeRepository.SYNC_THRESHOLD_MS)
+        get() = navidromeRepository.isLoggedIn && navidromeRepository.isFullSyncDue()
 
     suspend fun syncUnifiedCloudLibraries() {
         syncNavidromeData()
@@ -28,10 +27,7 @@ class CloudSyncCoordinator @Inject constructor(
     private suspend fun syncNavidromeData() {
         if (!navidromeRepository.isLoggedIn) return
 
-        val lastSync = navidromeRepository.lastFullSyncTime
-        val currentTime = System.currentTimeMillis()
-
-        if (currentTime - lastSync < NavidromeRepository.SYNC_THRESHOLD_MS) {
+        if (!navidromeRepository.isFullSyncDue()) {
             Timber.tag(TAG).d("Skipping Navidrome server sync - last sync was recent.")
             navidromeRepository.syncUnifiedLibrarySongsFromNavidrome()
             return

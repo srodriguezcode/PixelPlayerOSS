@@ -17,6 +17,7 @@ import com.lostf1sh.pixelplayeross.data.database.SongArtistCrossRef
 import com.lostf1sh.pixelplayeross.data.database.SongEntity
 import com.lostf1sh.pixelplayeross.data.database.SourceType
 import com.lostf1sh.pixelplayeross.data.database.toSong
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.model.Song
 import com.lostf1sh.pixelplayeross.data.navidrome.model.NavidromeAuthMethod
 import com.lostf1sh.pixelplayeross.data.navidrome.model.NavidromeCredentials
@@ -77,6 +78,10 @@ class NavidromeRepository @Inject constructor(
         private const val KEY_PASSWORD = "password"
         private const val KEY_AUTH_METHOD = "auth_method"
         private const val KEY_LAST_FULL_SYNC = "last_full_sync"
+        private const val KEY_LIBRARY_SYNC_VERSION = "library_sync_version"
+
+        /** Bump when sync stores a new field, so installs re-sync once. 1: release types (#6). */
+        private const val LIBRARY_SYNC_VERSION = 1
 
         private const val NAVIDROME_SONG_ID_OFFSET = 9_000_000_000_000L
         private const val NAVIDROME_ALBUM_ID_OFFSET = 10_000_000_000_000L
@@ -176,7 +181,14 @@ class NavidromeRepository @Inject constructor(
 
     var lastFullSyncTime: Long
         get() = prefs.getLong(KEY_LAST_FULL_SYNC, 0L)
-        set(value) = prefs.edit { putLong(KEY_LAST_FULL_SYNC, value) }
+        set(value) = prefs.edit {
+            putLong(KEY_LAST_FULL_SYNC, value)
+            putInt(KEY_LIBRARY_SYNC_VERSION, LIBRARY_SYNC_VERSION)
+        }
+
+    fun isFullSyncDue(nowMs: Long = System.currentTimeMillis()): Boolean =
+        prefs.getInt(KEY_LIBRARY_SYNC_VERSION, 0) < LIBRARY_SYNC_VERSION ||
+            nowMs - lastFullSyncTime >= SYNC_THRESHOLD_MS
 
     /**
      * Login to Navidrome server with credentials.
@@ -418,7 +430,7 @@ class NavidromeRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 Timber.d("$TAG: Syncing library songs from server")
-                val allSongs = mutableListOf<NavidromeSong>()
+                val allSongs = mutableListOf<Pair<NavidromeSong, ReleaseType>>()
                 val pageSize = 500
                 
                 onProgress?.invoke(0.1f, context.getString(R.string.dash_status_fetching_albums))
@@ -470,6 +482,9 @@ class NavidromeRepository @Inject constructor(
                                 val albumTitle = albumJson.optString("title", "Unknown Album")
                                 if (albumId.isBlank()) return@withPermit emptyList()
 
+                                val releaseType = releaseTypeFromNavidrome(
+                                    NavidromeResponseParser.parseReleaseTypes(albumJson)
+                                )
                                 val songsResult = api.getAlbum(albumId)
                                 val currentProcessed = processedCount.incrementAndGet()
                                 
@@ -482,6 +497,7 @@ class NavidromeRepository @Inject constructor(
                                 songsResult.fold(
                                     onSuccess = { songJsons ->
                                         NavidromeResponseParser.parseSongs(songJsons)
+                                            .map { song -> song to releaseType }
                                     },
                                     onFailure = {
                                         Timber.w(it, "$TAG: Failed to fetch songs for album $albumId")
@@ -505,10 +521,10 @@ class NavidromeRepository @Inject constructor(
                     0.95f, 
                     context.getString(R.string.dash_status_saving_songs_format, allSongs.size)
                 )
-                val uniqueSongs = allSongs.distinctBy { it.id }
+                val uniqueSongs = allSongs.distinctBy { it.first.id }
 
-                val entities = uniqueSongs.map { song ->
-                    song.toEntity(LIBRARY_PLAYLIST_ID)
+                val entities = uniqueSongs.map { (song, releaseType) ->
+                    song.toEntity(LIBRARY_PLAYLIST_ID, releaseType = releaseType)
                 }
 
                 dao.replaceLibrarySongs(entities)
@@ -818,6 +834,10 @@ class NavidromeRepository @Inject constructor(
 
             val albumId = toUnifiedAlbumId(navidromeSong.albumId, navidromeSong.album)
             val albumName = navidromeSong.album.ifBlank { "Unknown Album" }
+            val knownAlbum = albums[albumId]
+            if (knownAlbum != null && knownAlbum.releaseType == ReleaseType.NONE) {
+                albums[albumId] = knownAlbum.copy(releaseType = navidromeSong.releaseType)
+            }
             albums.putIfAbsent(
                 albumId,
                 AlbumEntity(
@@ -830,7 +850,8 @@ class NavidromeRepository @Inject constructor(
                     year = navidromeSong.year,
                     albumArtUriString = navidromeSong.coverArtId?.takeIf { it.isNotBlank() }
                         ?.let { "navidrome_cover://$it" },
-                    albumArtist = navidromeSong.albumArtist?.takeIf { it.isNotBlank() }
+                    albumArtist = navidromeSong.albumArtist?.takeIf { it.isNotBlank() },
+                    releaseType = navidromeSong.releaseType
                 )
             )
 

@@ -7,4 +7,9 @@
     <!-- Button above the album list of an artist's page -->
     <string name="artist_page_collapse_all_albums">Collapse all</string>
     <string name="artist_page_expand_all_albums">Expand all</string>
+    <!-- Group titles of the release list of an artist's page, by release type -->
+    <string name="artist_page_group_albums">Albums</string>
+    <string name="artist_page_group_eps">EPs</string>
+    <string name="artist_page_group_singles">Singles</string>
+    <string name="artist_page_group_other_releases">Other releases</string>
 </resources>

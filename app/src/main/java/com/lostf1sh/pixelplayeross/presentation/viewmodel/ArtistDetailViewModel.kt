@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lostf1sh.pixelplayeross.R
 import com.lostf1sh.pixelplayeross.data.model.Artist
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.model.Song
 import com.lostf1sh.pixelplayeross.data.preferences.UserPreferencesRepository
 import com.lostf1sh.pixelplayeross.data.repository.ArtistImageRepository
@@ -16,6 +17,7 @@ import com.lostf1sh.pixelplayeross.utils.GenreParser
 import com.lostf1sh.pixelplayeross.utils.LocalArtworkUri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
@@ -44,6 +49,7 @@ data class ArtistDetailUiState(
     val artist: Artist? = null,
     val songs: List<Song> = emptyList(),
     val albumSections: List<ArtistAlbumSection> = emptyList(),
+    val releaseGroups: List<ArtistReleaseGroup> = emptyList(),
     val albumsCollapsedByDefault: Boolean = false,
     val effectiveImageUrl: String? = null,
     val isLoading: Boolean = false,
@@ -59,6 +65,19 @@ data class ArtistAlbumSection(
     val songs: List<Song>,
     /** The genre most of the album's tracks share, or null when none is tagged. */
     val genre: String? = null
+)
+
+@Immutable
+data class ArtistReleaseGroup(
+    val type: ReleaseType,
+    val sections: List<ArtistAlbumSection>
+)
+
+private data class LoadedArtist(
+    val artist: Artist?,
+    val songs: List<Song>,
+    val sections: List<ArtistAlbumSection>,
+    val releaseTypes: Map<Long, ReleaseType>
 )
 
 @HiltViewModel
@@ -115,6 +134,7 @@ class ArtistDetailViewModel @Inject constructor(
     private var currentLoadJob: Job? = null
     private var loadedArtistId: Long? = null
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun loadArtistData(id: Long) {
         loadedArtistId = id
         currentLoadJob?.cancel()
@@ -134,8 +154,17 @@ class ArtistDetailViewModel @Inject constructor(
                     userPreferencesRepository.groupLocalAlbumsByTitleFlow
                 ) { artist, songs, groupLocalAlbumsByTitle ->
                     Timber.tag("ArtistDebug").d("loadArtistData: id=$id found=${artist != null} songs=${songs.size}")
-                    Triple(artist, songs, groupLocalAlbumsByTitle)
+                    Triple(artist, songs, buildAlbumSections(songs, groupLocalAlbumsByTitle))
                 }
+                    .flatMapLatest { (artist, songs, sections) ->
+                        val albumIds = sections.map { it.albumId }.distinct()
+                        val releaseTypesFlow = if (albumIds.isEmpty()) {
+                            flowOf(emptyMap())
+                        } else {
+                            musicRepository.getAlbumReleaseTypes(albumIds)
+                        }
+                        releaseTypesFlow.map { LoadedArtist(artist, songs, sections, it) }
+                    }
                     .catch { e ->
                         _uiState.update {
                             it.copy(
@@ -144,7 +173,7 @@ class ArtistDetailViewModel @Inject constructor(
                             )
                         }
                     }
-                    .collect { (artist, songs, groupLocalAlbumsByTitle) ->
+                    .collect { (artist, songs, sections, releaseTypes) ->
                         if (artist == null) {
                             _uiState.update {
                                 it.copy(error = context.getString(R.string.could_not_find_artist), isLoading = false)
@@ -152,7 +181,8 @@ class ArtistDetailViewModel @Inject constructor(
                             return@collect
                         }
 
-                        val albumSections = buildAlbumSections(songs, groupLocalAlbumsByTitle)
+                        val releaseGroups = groupReleaseSections(sections, releaseTypes)
+                        val albumSections = releaseGroups.flatMap { it.sections }
                         val orderedSongs = albumSections.flatMap { it.songs }
 
                         val effectiveUrl = try {
@@ -182,6 +212,7 @@ class ArtistDetailViewModel @Inject constructor(
                             ),
                             songs = orderedSongs,
                             albumSections = albumSections,
+                            releaseGroups = releaseGroups,
                             albumsCollapsedByDefault = albumsCollapsedByDefault,
                             effectiveImageUrl = effectiveUrl,
                             isLoading = false
@@ -284,13 +315,19 @@ class ArtistDetailViewModel @Inject constructor(
 
     fun removeSongFromAlbumSection(songId: String) {
         val updatedState = _uiState.updateAndGet { currentState ->
-            val updatedAlbumSections = currentState.albumSections.map { section ->
-                val updatedSongs = section.songs.filterNot { it.id == songId }
-                section.copy(songs = updatedSongs)
-            }.filter { it.songs.isNotEmpty() }
+            val updatedGroups = currentState.releaseGroups
+                .map { group ->
+                    group.copy(
+                        sections = group.sections
+                            .map { section -> section.copy(songs = section.songs.filterNot { it.id == songId }) }
+                            .filter { it.songs.isNotEmpty() }
+                    )
+                }
+                .filter { it.sections.isNotEmpty() }
 
             currentState.copy(
-                albumSections = updatedAlbumSections,
+                albumSections = updatedGroups.flatMap { it.sections },
+                releaseGroups = updatedGroups,
                 songs = currentState.songs.filterNot { it.id == songId }
             )
         }
@@ -359,3 +396,18 @@ internal fun buildAlbumSections(
 
     return withYearSorted + withoutYearSorted
 }
+
+private val releaseGroupOrder = listOf(ReleaseType.ALBUM, ReleaseType.EP, ReleaseType.SINGLE, ReleaseType.NONE)
+
+/** Keeps the order of [sections] inside each group; an id missing from [releaseTypes] counts as NONE. */
+internal fun groupReleaseSections(
+    sections: List<ArtistAlbumSection>,
+    releaseTypes: Map<Long, ReleaseType>
+): List<ArtistReleaseGroup> {
+    val byType = sections.groupBy { releaseTypes[it.albumId] ?: ReleaseType.NONE }
+    return releaseGroupOrder.mapNotNull { type ->
+        byType[type]?.let { ArtistReleaseGroup(type, it) }
+    }
+}
+
+internal fun List<ArtistReleaseGroup>.showsGroupTitles(): Boolean = any { it.type != ReleaseType.NONE }

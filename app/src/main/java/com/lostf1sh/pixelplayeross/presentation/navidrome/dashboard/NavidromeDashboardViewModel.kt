@@ -71,9 +71,7 @@ class NavidromeDashboardViewModel @Inject constructor(
     init {
         observeSyncWorker()
         loadMusicFolders()
-        val lastSync = repository.lastFullSyncTime
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastSync > NavidromeRepository.SYNC_THRESHOLD_MS) {
+        if (repository.isFullSyncDue()) {
             syncAllPlaylistsAndSongs()
         }
     }

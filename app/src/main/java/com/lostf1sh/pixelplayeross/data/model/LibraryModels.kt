@@ -14,7 +14,8 @@ data class Album(
     val dateAdded: Long,
     val albumArtUriString: String?,
     val songCount: Int,
-    val albumArtist: String? = null
+    val albumArtist: String? = null,
+    val releaseType: ReleaseType = ReleaseType.NONE
 ) : Parcelable {
     companion object {
         fun empty() = Album(

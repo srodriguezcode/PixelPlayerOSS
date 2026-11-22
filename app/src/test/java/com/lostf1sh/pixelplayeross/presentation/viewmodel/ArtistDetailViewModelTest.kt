@@ -34,6 +34,7 @@ class ArtistDetailViewModelTest {
     private val musicRepository = mockk<MusicRepository> {
         every { getArtistById(ArtistId) } returns flowOf(Artist(id = ArtistId, name = "Aurora Fields", songCount = 9))
         every { getSongsForArtist(ArtistId) } returns artistSongs
+        every { getAlbumReleaseTypes(any()) } returns flowOf(emptyMap())
     }
 
     private val artistImageRepository = mockk<ArtistImageRepository> {
