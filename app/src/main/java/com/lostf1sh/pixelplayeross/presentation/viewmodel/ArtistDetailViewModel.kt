@@ -181,7 +181,7 @@ class ArtistDetailViewModel @Inject constructor(
                             return@collect
                         }
 
-                        val releaseGroups = groupReleaseSections(sections, releaseTypes)
+                        val releaseGroups = groupReleaseSections(sections, releaseTypes, artist.id)
                         val albumSections = releaseGroups.flatMap { it.sections }
                         val orderedSongs = albumSections.flatMap { it.songs }
 
@@ -399,15 +399,30 @@ internal fun buildAlbumSections(
 
 private val releaseGroupOrder = listOf(ReleaseType.ALBUM, ReleaseType.EP, ReleaseType.SINGLE, ReleaseType.NONE)
 
-/** Keeps the order of [sections] inside each group; an id missing from [releaseTypes] counts as NONE. */
+/**
+ * Keeps the order of [sections] inside each group; an id missing from [releaseTypes] counts as NONE.
+ * An album where [artistId] is never the primary artist goes under singles (#19).
+ */
 internal fun groupReleaseSections(
     sections: List<ArtistAlbumSection>,
-    releaseTypes: Map<Long, ReleaseType>
+    releaseTypes: Map<Long, ReleaseType>,
+    artistId: Long
 ): List<ArtistReleaseGroup> {
-    val byType = sections.groupBy { releaseTypes[it.albumId] ?: ReleaseType.NONE }
+    val byType = sections.groupBy { section ->
+        val type = releaseTypes[section.albumId] ?: ReleaseType.NONE
+        if (type == ReleaseType.ALBUM && section.songs.none { it.hasPrimaryArtist(artistId) }) {
+            ReleaseType.SINGLE
+        } else {
+            type
+        }
+    }
     return releaseGroupOrder.mapNotNull { type ->
         byType[type]?.let { ArtistReleaseGroup(type, it) }
     }
 }
+
+/** Rows synced before multi-artist parsing have no [Song.artists]; their [Song.artistId] is the primary one. */
+private fun Song.hasPrimaryArtist(artistId: Long): Boolean =
+    if (artists.isEmpty()) this.artistId == artistId else artists.any { it.id == artistId && it.isPrimary }
 
 internal fun List<ArtistReleaseGroup>.showsGroupTitles(): Boolean = any { it.type != ReleaseType.NONE }
