@@ -181,7 +181,13 @@ class ArtistDetailViewModel @Inject constructor(
                             return@collect
                         }
 
-                        val releaseGroups = groupReleaseSections(sections, releaseTypes)
+                        /** Songs loaded by album artist are all the artist's own, compilations included. */
+                        val groupByAlbumArtist = userPreferencesRepository.groupByAlbumArtistFlow.first()
+                        val releaseGroups = groupReleaseSections(
+                            sections,
+                            releaseTypes,
+                            artist.id.takeUnless { groupByAlbumArtist }
+                        )
                         val albumSections = releaseGroups.flatMap { it.sections }
                         val orderedSongs = albumSections.flatMap { it.songs }
 
@@ -399,12 +405,24 @@ internal fun buildAlbumSections(
 
 private val releaseGroupOrder = listOf(ReleaseType.ALBUM, ReleaseType.EP, ReleaseType.SINGLE, ReleaseType.NONE)
 
-/** Keeps the order of [sections] inside each group; an id missing from [releaseTypes] counts as NONE. */
+/**
+ * Keeps the order of [sections] inside each group; an id missing from [releaseTypes] counts as NONE.
+ * An album where [artistId] is never the primary artist goes under singles (#19); null skips that rule.
+ */
 internal fun groupReleaseSections(
     sections: List<ArtistAlbumSection>,
-    releaseTypes: Map<Long, ReleaseType>
+    releaseTypes: Map<Long, ReleaseType>,
+    artistId: Long?
 ): List<ArtistReleaseGroup> {
-    val byType = sections.groupBy { releaseTypes[it.albumId] ?: ReleaseType.NONE }
+    val byType = sections.groupBy { section ->
+        val type = releaseTypes[section.albumId] ?: ReleaseType.NONE
+        val featuredOnly = artistId != null && section.songs.none { it.primaryArtist.id == artistId }
+        if (type == ReleaseType.ALBUM && featuredOnly) {
+            ReleaseType.SINGLE
+        } else {
+            type
+        }
+    }
     return releaseGroupOrder.mapNotNull { type ->
         byType[type]?.let { ArtistReleaseGroup(type, it) }
     }

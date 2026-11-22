@@ -44,6 +44,7 @@ class ArtistDetailViewModelTest {
     private val userPreferencesRepository = mockk<UserPreferencesRepository> {
         every { artistAlbumsCollapsedByDefaultFlow } returns collapsedByDefault
         every { groupLocalAlbumsByTitleFlow } returns flowOf(false)
+        every { groupByAlbumArtistFlow } returns flowOf(false)
     }
 
     @Test

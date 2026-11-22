@@ -2,6 +2,7 @@ package com.lostf1sh.pixelplayeross.presentation.viewmodel
 
 import com.google.common.truth.Truth.assertThat
 import com.lostf1sh.pixelplayeross.data.model.ReleaseType
+import com.lostf1sh.pixelplayeross.data.model.Song
 import org.junit.jupiter.api.Test
 
 class ArtistAlbumSectionExpansionTest {
@@ -79,7 +80,8 @@ class ArtistAlbumSectionExpansionTest {
     fun `releases in different groups count together, so one album and one single both start collapsed`() {
         val groups = groupReleaseSections(
             listOf(section(albumId = 1L, title = "Neon Ritual"), section(albumId = 2L, title = "Glad")),
-            mapOf(1L to ReleaseType.ALBUM, 2L to ReleaseType.SINGLE)
+            mapOf(1L to ReleaseType.ALBUM, 2L to ReleaseType.SINGLE),
+            ARTIST_ID
         )
         val keys = groups.flatMap { it.sections }.map { it.collapseKey() }
 
@@ -106,6 +108,10 @@ class ArtistAlbumSectionExpansionTest {
         title = title,
         year = null,
         albumArtUriString = null,
-        songs = emptyList()
+        songs = listOf(Song.emptySong().copy(artistId = ARTIST_ID))
     )
+
+    private companion object {
+        const val ARTIST_ID = 7L
+    }
 }
