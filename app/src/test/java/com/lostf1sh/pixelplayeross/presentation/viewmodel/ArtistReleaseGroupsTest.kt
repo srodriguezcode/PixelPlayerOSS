@@ -158,6 +158,29 @@ class ArtistReleaseGroupsTest {
     }
 
     @Test
+    fun `album where no artist is marked primary counts as the first artist's own`() {
+        val song = Song.emptySong().copy(
+            id = "a",
+            artistId = OTHER_ID,
+            artists = listOf(ArtistRef(ARTIST_ID, "Mira Vale"), ArtistRef(OTHER_ID, "Juno Park"))
+        )
+        val album = section(1L, "Neon Ritual", 2023, listOf(song))
+
+        val groups = groupReleaseSections(listOf(album), mapOf(1L to ReleaseType.ALBUM), ARTIST_ID)
+
+        assertEquals(listOf(ReleaseType.ALBUM), groups.map { it.type })
+    }
+
+    @Test
+    fun `without an artist id a compilation stays under albums`() {
+        val compilation = section(1L, "Summer Mixtape", 2022, listOf(featuring("a"), featuring("b")))
+
+        val groups = groupReleaseSections(listOf(compilation), mapOf(1L to ReleaseType.ALBUM), artistId = null)
+
+        assertEquals(listOf(ReleaseType.ALBUM), groups.map { it.type })
+    }
+
+    @Test
     fun `no sections give no groups`() {
         assertTrue(groupReleaseSections(emptyList(), emptyMap(), ARTIST_ID).isEmpty())
     }
@@ -183,7 +206,12 @@ class ArtistReleaseGroupsTest {
         artists = listOf(ArtistRef(OTHER_ID, "Juno Park", isPrimary = true), ArtistRef(ARTIST_ID, "Mira Vale"))
     )
 
-    private fun section(albumId: Long, title: String, year: Int, songs: List<Song> = listOf(primary("p$albumId"))) = ArtistAlbumSection(
+    private fun section(
+        albumId: Long,
+        title: String,
+        year: Int,
+        songs: List<Song> = listOf(primary("p$albumId"))
+    ) = ArtistAlbumSection(
         albumId = albumId,
         title = title,
         year = year,

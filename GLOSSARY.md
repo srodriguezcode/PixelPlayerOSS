@@ -40,6 +40,14 @@ _Avoid_: one-track album
 The artist of the full release. It can be different from the artist of one song on that release.
 _Avoid_: main artist
 
+**Primary artist**
+The first credited artist of one song. A song has one primary artist.
+_Avoid_: main artist, lead artist
+
+**Featured artist**
+An artist of a song who is not its primary artist.
+_Avoid_: guest, feat. artist
+
 **Favorite**
 A song that the user marked with the heart. On a music server that supports it, the mark is the same on the server.
 _Avoid_: liked, loved, starred
