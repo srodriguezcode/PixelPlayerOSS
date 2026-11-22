@@ -21,8 +21,8 @@ class ReleaseTypeMigrationTest {
 
     @Test
     @Throws(IOException::class)
-    fun migrationFromSevenToEightGivesExistingRowsReleaseTypeNone() {
-        migrationHelper.createDatabase(DATABASE_NAME, 7).apply {
+    fun migrationFromSixToSevenGivesExistingRowsReleaseTypeNone() {
+        migrationHelper.createDatabase(DATABASE_NAME, 6).apply {
             execSQL(
                 "INSERT INTO albums (id, title, artist_name, artist_id, album_art_uri_string, " +
                     "song_count, date_added, year, album_artist) VALUES " +
@@ -42,9 +42,9 @@ class ReleaseTypeMigrationTest {
 
         migrationHelper.runMigrationsAndValidate(
             name = DATABASE_NAME,
-            version = 8,
+            version = 7,
             validateDroppedTables = true,
-            MIGRATION_7_8,
+            MIGRATION_6_7,
         ).use { database ->
             assertThat(database.releaseTypes("albums")).containsExactly("NONE")
             assertThat(database.releaseTypes("navidrome_songs")).containsExactly("NONE")
