@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.lostf1sh.pixelplayeross.data.model.Album
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.utils.LocalArtworkUri
 import com.lostf1sh.pixelplayeross.utils.normalizeMetadataTextOrEmpty
 
@@ -26,7 +27,9 @@ data class AlbumEntity(
     @ColumnInfo(name = "song_count") val songCount: Int,
     @ColumnInfo(name = "date_added") val dateAdded: Long,
     @ColumnInfo(name = "year") val year: Int,
-    @ColumnInfo(name = "album_artist") val albumArtist: String? = null
+    @ColumnInfo(name = "album_artist") val albumArtist: String? = null,
+    @ColumnInfo(name = "release_type", defaultValue = RELEASE_TYPE_DEFAULT_SQL)
+    val releaseType: ReleaseType = ReleaseType.NONE
 )
 
 fun AlbumEntity.toAlbum(): Album {
@@ -46,7 +49,8 @@ fun AlbumEntity.toAlbum(): Album {
         albumArtUriString = effectiveAlbumArtUri,
         songCount = this.songCount,
         dateAdded = this.dateAdded,
-        year = this.year
+        year = this.year,
+        releaseType = this.releaseType
     )
 }
 
@@ -64,6 +68,7 @@ fun Album.toEntity(artistIdForAlbum: Long): AlbumEntity {
         songCount = this.songCount,
         dateAdded = this.dateAdded,
         year = this.year,
-        albumArtist = this.albumArtist
+        albumArtist = this.albumArtist,
+        releaseType = this.releaseType
     )
 }

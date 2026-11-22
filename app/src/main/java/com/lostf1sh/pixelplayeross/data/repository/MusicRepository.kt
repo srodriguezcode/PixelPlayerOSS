@@ -7,6 +7,7 @@ import com.lostf1sh.pixelplayeross.data.model.Artist
 import com.lostf1sh.pixelplayeross.data.model.Lyrics
 import com.lostf1sh.pixelplayeross.data.model.LyricsSourcePreference
 import com.lostf1sh.pixelplayeross.data.model.Playlist
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.model.SearchFilterType
 import com.lostf1sh.pixelplayeross.data.model.SearchHistoryItem
 import com.lostf1sh.pixelplayeross.data.model.SearchResultItem
@@ -193,6 +194,9 @@ interface MusicRepository {
      * @return Flow that emits the Album object, or null if not found.
      */
     fun getAlbumById(id: Long): Flow<Album?>
+
+    /** Release type by album ID. An album missing from the result has no row in the library. */
+    fun getAlbumReleaseTypes(albumIds: List<Long>): Flow<Map<Long, ReleaseType>>
 
     /**
      * Returns the filtered list of artists.

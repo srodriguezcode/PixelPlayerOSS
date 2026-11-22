@@ -1124,7 +1124,8 @@ interface MusicDao {
             albums.album_art_uri_string AS album_art_uri_string,
             COUNT(songs.id) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM songs
         INNER JOIN albums ON albums.id = songs.album_id
         WHERE (:applyDirectoryFilter = 0 OR songs.id < 0 OR songs.parent_directory_path IN (:allowedParentDirs))
@@ -1147,7 +1148,8 @@ interface MusicDao {
             albums.album_artist,
             albums.album_art_uri_string,
             albums.date_added,
-            albums.year
+            albums.year,
+            albums.release_type
         HAVING COUNT(songs.id) >= :minTracks
         ORDER BY albums.title ASC
     """)
@@ -1168,7 +1170,8 @@ interface MusicDao {
             albums.album_art_uri_string AS album_art_uri_string,
             COUNT(songs.id) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM songs
         INNER JOIN albums ON albums.id = songs.album_id
         WHERE (:applyDirectoryFilter = 0 OR songs.id < 0 OR songs.parent_directory_path IN (:allowedParentDirs))
@@ -1191,7 +1194,8 @@ interface MusicDao {
             albums.album_artist,
             albums.album_art_uri_string,
             albums.date_added,
-            albums.year
+            albums.year,
+            albums.release_type
         HAVING COUNT(songs.id) >= :minTracks
         ORDER BY
             CASE WHEN :sortOrder = 'album_title_az' THEN albums.title END COLLATE NOCASE ASC,
@@ -1225,7 +1229,8 @@ interface MusicDao {
             albums.album_art_uri_string AS album_art_uri_string,
             COUNT(songs.id) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM songs
         INNER JOIN albums ON albums.id = songs.album_id
         WHERE (:applyDirectoryFilter = 0 OR songs.id < 0 OR songs.parent_directory_path IN (:allowedParentDirs))
@@ -1248,7 +1253,8 @@ interface MusicDao {
             albums.album_artist,
             albums.album_art_uri_string,
             albums.date_added,
-            albums.year
+            albums.year,
+            albums.release_type
         HAVING COUNT(songs.id) >= :minTracks
         ORDER BY
             CASE WHEN :sortOrder = 'album_title_az' THEN albums.title END COLLATE NOCASE ASC,
@@ -1289,12 +1295,16 @@ interface MusicDao {
                 WHERE songs.album_id = albums.id
             ) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM albums
         WHERE albums.id = :albumId
         LIMIT 1
     """)
     fun getAlbumById(albumId: Long): Flow<AlbumEntity?>
+
+    @Query("SELECT id AS album_id, release_type FROM albums WHERE id IN (:albumIds)")
+    fun getAlbumReleaseTypes(albumIds: List<Long>): Flow<List<AlbumReleaseTypeRow>>
 
     @Query("""
         SELECT
@@ -1310,7 +1320,8 @@ interface MusicDao {
                 WHERE songs.album_id = albums.id
             ) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM albums
         WHERE albums.title LIKE '%' || :query || '%'
         AND song_count >= :minTracks
@@ -1350,7 +1361,8 @@ interface MusicDao {
             albums.album_art_uri_string AS album_art_uri_string,
             COUNT(songs.id) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM albums
         LEFT JOIN songs ON albums.id = songs.album_id
         WHERE albums.artist_id = :artistId
@@ -1362,7 +1374,8 @@ interface MusicDao {
             albums.album_artist,
             albums.album_art_uri_string,
             albums.date_added,
-            albums.year
+            albums.year,
+            albums.release_type
         ORDER BY albums.title ASC
     """)
     fun getAlbumsByArtistId(artistId: Long): Flow<List<AlbumEntity>>
@@ -1377,7 +1390,8 @@ interface MusicDao {
             albums.album_art_uri_string AS album_art_uri_string,
             COUNT(songs.id) AS song_count,
             albums.date_added AS date_added,
-            albums.year AS year
+            albums.year AS year,
+            albums.release_type AS release_type
         FROM songs
         INNER JOIN albums ON albums.id = songs.album_id
         WHERE (:applyDirectoryFilter = 0 OR songs.id < 0 OR songs.parent_directory_path IN (:allowedParentDirs))
@@ -1390,7 +1404,8 @@ interface MusicDao {
             albums.album_artist,
             albums.album_art_uri_string,
             albums.date_added,
-            albums.year
+            albums.year,
+            albums.release_type
         HAVING COUNT(songs.id) >= :minTracks
         ORDER BY albums.title ASC
     """)

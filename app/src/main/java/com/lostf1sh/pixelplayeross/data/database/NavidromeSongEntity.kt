@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.lostf1sh.pixelplayeross.data.model.ReleaseType
 import com.lostf1sh.pixelplayeross.data.model.Song
 import com.lostf1sh.pixelplayeross.data.navidrome.NavidromeSongUri
 import com.lostf1sh.pixelplayeross.data.navidrome.model.NavidromeSong
@@ -32,6 +33,7 @@ import com.lostf1sh.pixelplayeross.data.stream.CloudMusicUtils
  * @property path The file path on the server
  * @property dateAdded When the song was added to the server library (epoch millis), falling back
  * to the time it was cached when the server does not report it
+ * @property releaseType The release type of the song's release, from the album that the sync read it from
  */
 @Entity(
     tableName = "navidrome_songs",
@@ -61,7 +63,9 @@ data class NavidromeSongEntity(
     @ColumnInfo(name = "mime_type") val mimeType: String?,
     val suffix: String?,
     val path: String,
-    @ColumnInfo(name = "date_added") val dateAdded: Long
+    @ColumnInfo(name = "date_added") val dateAdded: Long,
+    @ColumnInfo(name = "release_type", defaultValue = RELEASE_TYPE_DEFAULT_SQL)
+    val releaseType: ReleaseType = ReleaseType.NONE
 )
 
 /**
