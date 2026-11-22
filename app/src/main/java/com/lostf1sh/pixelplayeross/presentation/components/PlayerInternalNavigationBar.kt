@@ -1,6 +1,8 @@
 package com.lostf1sh.pixelplayeross.presentation.components
 
-import com.lostf1sh.pixelplayeross.presentation.navigation.navigateToTopLevelSafely
+import com.lostf1sh.pixelplayeross.presentation.navigation.MainTabTap
+import com.lostf1sh.pixelplayeross.presentation.navigation.resolveMainTabTap
+import com.lostf1sh.pixelplayeross.presentation.navigation.selectMainTab
 
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
@@ -99,6 +101,7 @@ private fun PlayerInternalNavigationItemsRow(
     navController: NavHostController,
     navItems: ImmutableList<BottomNavItem>,
     currentRoute: String?,
+    currentTabRoute: String?,
     modifier: Modifier = Modifier,
     navBarStyle: String,
     compactMode: Boolean,
@@ -110,6 +113,7 @@ private fun PlayerInternalNavigationItemsRow(
     )
     val innerRowPadding = (navBarInsetPadding - bottomBarPadding).coerceAtLeast(0.dp)
     val latestCurrentRoute by rememberUpdatedState(currentRoute)
+    val latestCurrentTabRoute by rememberUpdatedState(currentTabRoute)
     val latestOnSearchIconDoubleTap by rememberUpdatedState(onSearchIconDoubleTap)
     val latestNavigationEnabled by rememberUpdatedState(currentRoute != null)
 
@@ -130,7 +134,7 @@ private fun PlayerInternalNavigationItemsRow(
         val scope = rememberCoroutineScope()
         var lastSearchTapTimestamp by remember { mutableStateOf(0L) }
         navItems.forEach { item ->
-            val isSelected = currentRoute != null && currentRoute == item.screen.route
+            val isSelected = currentRoute != null && currentTabRoute == item.screen.route
             val selectedColor = MaterialTheme.colorScheme.primary
             val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
             val indicatorColorFromTheme = MaterialTheme.colorScheme.secondaryContainer
@@ -174,15 +178,15 @@ private fun PlayerInternalNavigationItemsRow(
 
                     val itemRoute = item.screen.route
                     val isSearchTab = itemRoute == Screen.Search.route
-                    val isAlreadySelected = latestCurrentRoute == itemRoute
+                    val tap = resolveMainTabTap(itemRoute, latestCurrentRoute, latestCurrentTabRoute)
 
                     if (isSearchTab) {
                         val now = SystemClock.elapsedRealtime()
                         val isDoubleTap = now - lastSearchTapTimestamp <= 350L
                         lastSearchTapTimestamp = now
 
-                        if (!isAlreadySelected) {
-                            if (!navController.navigateToTopLevelSafely(itemRoute)) {
+                        if (tap != MainTabTap.None) {
+                            if (!navController.selectMainTab(tap, itemRoute)) {
                                 lastSearchTapTimestamp = 0L
                                 return@click
                             }
@@ -190,7 +194,7 @@ private fun PlayerInternalNavigationItemsRow(
 
                         if (isDoubleTap) {
                             lastSearchTapTimestamp = 0L
-                            if (isAlreadySelected) {
+                            if (tap == MainTabTap.None) {
                                 latestOnSearchIconDoubleTap()
                             } else {
                                 scope.launch {
@@ -199,11 +203,9 @@ private fun PlayerInternalNavigationItemsRow(
                                 }
                             }
                         }
-                    } else if (!isAlreadySelected) {
-                        lastSearchTapTimestamp = 0L
-                        navController.navigateToTopLevelSafely(itemRoute)
                     } else {
                         lastSearchTapTimestamp = 0L
+                        navController.selectMainTab(tap, itemRoute)
                     }
                 }
             }
@@ -233,6 +235,7 @@ fun PlayerInternalNavigationBar(
     navController: NavHostController,
     navItems: ImmutableList<BottomNavItem>,
     currentRoute: String?,
+    currentTabRoute: String?,
     modifier: Modifier = Modifier,
     navBarStyle: String,
     compactMode: Boolean,
@@ -243,6 +246,7 @@ fun PlayerInternalNavigationBar(
         navController = navController,
         navItems = navItems,
         currentRoute = currentRoute,
+        currentTabRoute = currentTabRoute,
         navBarStyle = navBarStyle,
         compactMode = compactMode,
         bottomBarPadding = bottomBarPadding,

@@ -36,7 +36,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.lostf1sh.pixelplayeross.BottomNavItem
 import com.lostf1sh.pixelplayeross.presentation.navigation.Screen
-import com.lostf1sh.pixelplayeross.presentation.navigation.navigateToTopLevelSafely
+import com.lostf1sh.pixelplayeross.presentation.navigation.MainTabTap
+import com.lostf1sh.pixelplayeross.presentation.navigation.resolveMainTabTap
+import com.lostf1sh.pixelplayeross.presentation.navigation.selectMainTab
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,10 +57,12 @@ fun PlayerNavigationRail(
     navController: NavHostController,
     navItems: ImmutableList<BottomNavItem>,
     currentRoute: String?,
+    currentTabRoute: String?,
     modifier: Modifier = Modifier,
     onSearchIconDoubleTap: () -> Unit = {}
 ) {
     val latestCurrentRoute by rememberUpdatedState(currentRoute)
+    val latestCurrentTabRoute by rememberUpdatedState(currentTabRoute)
     val latestOnSearchIconDoubleTap by rememberUpdatedState(onSearchIconDoubleTap)
     val latestNavigationEnabled by rememberUpdatedState(currentRoute != null)
     val scope = rememberCoroutineScope()
@@ -84,7 +88,7 @@ fun PlayerNavigationRail(
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
         ) {
             navItems.forEach { item ->
-                val isSelected = currentRoute != null && currentRoute == item.screen.route
+                val isSelected = currentRoute != null && currentTabRoute == item.screen.route
                 val label = stringResource(item.labelResId)
                 val iconPainterResId = if (isSelected && item.selectedIconResId != null && item.selectedIconResId != 0) {
                     item.selectedIconResId
@@ -101,15 +105,15 @@ fun PlayerNavigationRail(
 
                         val itemRoute = item.screen.route
                         val isSearchTab = itemRoute == Screen.Search.route
-                        val isAlreadySelected = latestCurrentRoute == itemRoute
+                        val tap = resolveMainTabTap(itemRoute, latestCurrentRoute, latestCurrentTabRoute)
 
                         if (isSearchTab) {
                             val now = SystemClock.elapsedRealtime()
                             val isDoubleTap = now - lastSearchTapTimestamp <= 350L
                             lastSearchTapTimestamp = now
 
-                            if (!isAlreadySelected) {
-                                if (!navController.navigateToTopLevelSafely(itemRoute)) {
+                            if (tap != MainTabTap.None) {
+                                if (!navController.selectMainTab(tap, itemRoute)) {
                                     lastSearchTapTimestamp = 0L
                                     return@click
                                 }
@@ -117,7 +121,7 @@ fun PlayerNavigationRail(
 
                             if (isDoubleTap) {
                                 lastSearchTapTimestamp = 0L
-                                if (isAlreadySelected) {
+                                if (tap == MainTabTap.None) {
                                     latestOnSearchIconDoubleTap()
                                 } else {
                                     scope.launch {
@@ -126,11 +130,9 @@ fun PlayerNavigationRail(
                                     }
                                 }
                             }
-                        } else if (!isAlreadySelected) {
-                            lastSearchTapTimestamp = 0L
-                            navController.navigateToTopLevelSafely(itemRoute)
                         } else {
                             lastSearchTapTimestamp = 0L
+                            navController.selectMainTab(tap, itemRoute)
                         }
                     }
                 }
