@@ -41,7 +41,9 @@ internal object RemoteArtworkCache {
     /** Cover size the fetchers request when the cover URI carries no `size` parameter. */
     const val DEFAULT_COVER_SIZE_PX = 500
 
-    private val COVER_SCHEMES = setOf("navidrome_cover", "jellyfin_cover")
+    const val NAVIDROME_COVER_SCHEME = "navidrome_cover"
+    const val JELLYFIN_COVER_SCHEME = "jellyfin_cover"
+    private val COVER_SCHEMES = setOf(NAVIDROME_COVER_SCHEME, JELLYFIN_COVER_SCHEME)
 
     private val downloadLocks = HashMap<String, DownloadLock>()
 
@@ -49,26 +51,31 @@ internal object RemoteArtworkCache {
     fun cacheFileName(scheme: String, coverId: String, sizePx: Int): String =
         "${scheme}_${coverId}_$sizePx.jpg"
 
-    /**
-     * The cache file the Navidrome/Jellyfin fetcher writes for [rawArtworkUri]
-     * (`navidrome_cover://<id>` or `jellyfin_cover://<id>`, optionally with `?size=`), or null
-     * when the URI is not a cloud cover URI this cache can name.
-     */
-    fun cacheFileFor(cacheDir: File, rawArtworkUri: String): File? {
+    /** Scheme and cover id of a music server cover URI (`navidrome_cover://<id>` or `jellyfin_cover://<id>`). */
+    data class CoverRef(val scheme: String, val coverId: String)
+
+    /** [CoverRef] of [rawArtworkUri], or null when it is not a music server cover URI a file can be named for. */
+    fun parseCoverUri(rawArtworkUri: String): CoverRef? {
         val scheme = rawArtworkUri.substringBefore("://", missingDelimiterValue = "").lowercase()
         if (scheme !in COVER_SCHEMES) return null
         val afterScheme = rawArtworkUri.substring(scheme.length + "://".length)
         val coverId = afterScheme.substringBefore('?').substringBefore('#').substringBefore('/')
         // Hosts with user info or a port would not match the id the fetcher reads from Uri.host.
         if (coverId.isBlank() || coverId.any { it == '@' || it == ':' || it == '\\' }) return null
-        val sizePx = afterScheme.substringAfter('?', missingDelimiterValue = "")
+        return CoverRef(scheme, coverId)
+    }
+
+    /** Cache file the fetcher writes for [rawArtworkUri] at its `?size=`, or null when it is not a cover URI. */
+    fun cacheFileFor(cacheDir: File, rawArtworkUri: String): File? {
+        val cover = parseCoverUri(rawArtworkUri) ?: return null
+        val sizePx = rawArtworkUri.substringAfter("://").substringAfter('?', missingDelimiterValue = "")
             .substringBefore('#')
             .split('&')
             .firstOrNull { it.startsWith("size=") }
             ?.removePrefix("size=")
             ?.toIntOrNull()
             ?: DEFAULT_COVER_SIZE_PX
-        return File(cacheDir, cacheFileName(scheme, coverId, sizePx))
+        return File(cacheDir, cacheFileName(cover.scheme, cover.coverId, sizePx))
     }
 
     /** Whether [file] holds a cached image (not an empty file or a cached server error body). */

@@ -1,5 +1,6 @@
 package com.lostf1sh.pixelplayeross.data.worker
 
+import androidx.work.WorkManager
 import com.lostf1sh.pixelplayeross.data.jellyfin.JellyfinRepository
 import com.lostf1sh.pixelplayeross.data.navidrome.NavidromeRepository
 import javax.inject.Inject
@@ -9,7 +10,8 @@ import timber.log.Timber
 @Singleton
 class CloudSyncCoordinator @Inject constructor(
     private val navidromeRepository: NavidromeRepository,
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
+    private val workManager: WorkManager
 ) {
     val needsActiveCloudSync: Boolean
         get() = navidromeRepository.isLoggedIn &&
@@ -18,6 +20,9 @@ class CloudSyncCoordinator @Inject constructor(
     suspend fun syncUnifiedCloudLibraries() {
         syncNavidromeData()
         syncJellyfinCache()
+        if (navidromeRepository.isLoggedIn || jellyfinRepository.isLoggedIn) {
+            OfflineCoverWorker.enqueue(workManager)
+        }
     }
 
     private suspend fun syncNavidromeData() {

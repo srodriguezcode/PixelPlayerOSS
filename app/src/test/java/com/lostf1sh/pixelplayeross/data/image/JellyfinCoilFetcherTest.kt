@@ -4,6 +4,7 @@ import android.net.Uri
 import coil.fetch.SourceResult
 import com.google.common.truth.Truth.assertThat
 import com.lostf1sh.pixelplayeross.data.jellyfin.JellyfinRepository
+import com.lostf1sh.pixelplayeross.data.offline.OfflineCopyCovers
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -24,6 +25,9 @@ class JellyfinCoilFetcherTest {
 
     @TempDir
     lateinit var cacheDir: File
+
+    @TempDir
+    lateinit var filesDir: File
 
     private val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)
 
@@ -69,7 +73,7 @@ class JellyfinCoilFetcherTest {
 
         // Coil runs fetchers on the ImageLoader's Default dispatcher.
         val fetch = launch(Dispatchers.Default) {
-            JellyfinCoilFetcher(coverUri, repository, server.client, cacheDir).fetch()
+            JellyfinCoilFetcher(coverUri, repository, server.client, cacheDir, filesDir).fetch()
             completedNormally = true
         }
         assertThat(server.firstRequestStarted.await(5, TimeUnit.SECONDS)).isTrue()
@@ -87,7 +91,7 @@ class JellyfinCoilFetcherTest {
         val albumCover = cacheCover("album-cover")
         coEvery { repository.getAlbumCoverItemId("item-1") } returns "album-cover"
 
-        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir).fetch()
+        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir, filesDir).fetch()
 
         assertThat((result as SourceResult).cachedPath()).isEqualTo(albumCover.absolutePath)
         // Not cached as the song's own cover.
@@ -99,7 +103,7 @@ class JellyfinCoilFetcherTest {
     fun `no cover when neither the song nor its album cover is cached`() = runTest {
         coEvery { repository.getAlbumCoverItemId("item-1") } returns "album-cover"
 
-        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir).fetch()
+        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir, filesDir).fetch()
 
         assertThat(result).isNull()
     }
@@ -109,10 +113,10 @@ class JellyfinCoilFetcherTest {
         val albumCover = cacheCover("album-cover")
         coEvery { repository.getAlbumCoverItemId(any()) } returns "album-cover"
 
-        JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir).fetch()
+        JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir, filesDir).fetch()
         assertThat(unreachableRequests.get()).isEqualTo(1)
 
-        val result = JellyfinCoilFetcher(coverUri("item-2"), repository, unreachableClient, cacheDir).fetch()
+        val result = JellyfinCoilFetcher(coverUri("item-2"), repository, unreachableClient, cacheDir, filesDir).fetch()
 
         assertThat(unreachableRequests.get()).isEqualTo(1)
         assertThat((result as SourceResult).cachedPath()).isEqualTo(albumCover.absolutePath)
@@ -128,8 +132,8 @@ class JellyfinCoilFetcherTest {
             }
             .build()
 
-        JellyfinCoilFetcher(coverUri, repository, slowClient, cacheDir).fetch()
-        JellyfinCoilFetcher(coverUri("item-2"), repository, slowClient, cacheDir).fetch()
+        JellyfinCoilFetcher(coverUri, repository, slowClient, cacheDir, filesDir).fetch()
+        JellyfinCoilFetcher(coverUri("item-2"), repository, slowClient, cacheDir, filesDir).fetch()
 
         assertThat(requests.get()).isEqualTo(2)
     }
@@ -140,10 +144,36 @@ class JellyfinCoilFetcherTest {
         coEvery { repository.getAlbumCoverItemId("item-1") } returns "album-cover"
         val server = GatedCoverServer(png).apply { releaseFirstResponse() }
 
-        val result = JellyfinCoilFetcher(coverUri, repository, server.client, cacheDir).fetch()
+        val result = JellyfinCoilFetcher(coverUri, repository, server.client, cacheDir, filesDir).fetch()
 
         val songCover = File(cacheDir, RemoteArtworkCache.cacheFileName("jellyfin_cover", "item-1", 500))
         assertThat((result as SourceResult).cachedPath()).isEqualTo(songCover.absolutePath)
         assertThat(songCover.readBytes()).isEqualTo(png)
     }
+
+    @Test
+    fun `saved cover of an offline copy is served without the server`() = runTest {
+        val saved = saveCover("item-1")
+
+        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir, filesDir).fetch()
+
+        assertThat((result as SourceResult).cachedPath()).isEqualTo(saved.absolutePath)
+        assertThat(unreachableRequests.get()).isEqualTo(0)
+    }
+
+    @Test
+    fun `unreachable server falls back to the saved album cover`() = runTest {
+        val saved = saveCover("album-cover")
+        coEvery { repository.getAlbumCoverItemId("item-1") } returns "album-cover"
+
+        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir, filesDir).fetch()
+
+        assertThat((result as SourceResult).cachedPath()).isEqualTo(saved.absolutePath)
+    }
+
+    private fun saveCover(itemId: String): File =
+        OfflineCopyCovers.fileFor(filesDir, "jellyfin_cover", itemId).apply {
+            parentFile!!.mkdirs()
+            writeBytes(png)
+        }
 }

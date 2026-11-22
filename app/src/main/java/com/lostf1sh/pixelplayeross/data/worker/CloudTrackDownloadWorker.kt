@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.lostf1sh.pixelplayeross.R
@@ -42,6 +43,7 @@ class CloudTrackDownloadWorker @AssistedInject constructor(
     private val navidromeRepository: NavidromeRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val exports: CloudDownloadExports,
+    private val workManager: WorkManager,
     baseOkHttpClient: OkHttpClient
 ) : CoroutineWorker(appContext, workerParams) {
     private val client = baseOkHttpClient.newBuilder()
@@ -203,7 +205,10 @@ class CloudTrackDownloadWorker @AssistedInject constructor(
                 }
             }
         }
-        completedFile?.let { file -> finishExport(entity, file, resumeInterruptedCopy = false) }
+        completedFile?.let { file ->
+            OfflineCoverWorker.enqueue(workManager)
+            finishExport(entity, file, resumeInterruptedCopy = false)
+        }
         result
     }
 

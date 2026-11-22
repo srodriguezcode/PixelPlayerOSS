@@ -8,6 +8,7 @@ import coil.fetch.Fetcher
 import coil.request.Options
 import coil.size.Size
 import com.lostf1sh.pixelplayeross.data.jellyfin.JellyfinRepository
+import com.lostf1sh.pixelplayeross.data.offline.OfflineCopyCovers
 import kotlinx.coroutines.CancellationException
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -25,6 +26,7 @@ class JellyfinCoilFetcher(
     private val repository: JellyfinRepository,
     private val okHttpClient: OkHttpClient,
     private val cacheDir: File,
+    private val filesDir: File,
     private val requestedSize: Size? = null
 ) : Fetcher {
 
@@ -90,6 +92,8 @@ class JellyfinCoilFetcher(
             return null
         }
 
+        OfflineCopyCovers.savedResult(filesDir, RemoteArtworkCache.JELLYFIN_COVER_SCHEME, itemId)?.let { return it }
+
         val sizeParam = resolveCloudCoverSize(
             explicitSizeParam = uri.getQueryParameter("size")?.toIntOrNull(),
             requestedSize = requestedSize
@@ -140,6 +144,7 @@ class JellyfinCoilFetcher(
      */
     private suspend fun cachedAlbumCover(itemId: String, sizePx: Int): FetchResult? {
         val albumCoverId = repository.getAlbumCoverItemId(itemId) ?: return null
+        OfflineCopyCovers.savedResult(filesDir, RemoteArtworkCache.JELLYFIN_COVER_SCHEME, albumCoverId)?.let { return it }
         return RemoteArtworkCache.cachedResult(
             File(cacheDir, RemoteArtworkCache.cacheFileName("jellyfin_cover", albumCoverId, sizePx))
         )
@@ -151,11 +156,13 @@ class JellyfinCoilFetcher(
     ) : Fetcher.Factory<Uri> {
 
         private var cacheDir: File? = null
+        private var filesDir: File? = null
 
         override fun create(data: Uri, options: Options, imageLoader: ImageLoader): Fetcher? {
             return if (data.scheme == "jellyfin_cover") {
                 val cache = cacheDir ?: options.context.cacheDir.also { cacheDir = it }
-                JellyfinCoilFetcher(data, repository, okHttpClient, cache, options.size)
+                val files = filesDir ?: options.context.filesDir.also { filesDir = it }
+                JellyfinCoilFetcher(data, repository, okHttpClient, cache, files, options.size)
             } else {
                 null
             }

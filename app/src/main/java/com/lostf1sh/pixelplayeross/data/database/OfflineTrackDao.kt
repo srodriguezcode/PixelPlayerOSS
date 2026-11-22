@@ -64,6 +64,19 @@ interface OfflineTrackDao {
     )
     suspend fun isCurrentAttempt(downloadId: String, attemptId: String): Boolean
 
+    @Query(
+        "UPDATE offline_tracks SET song_cover_uri = :songCoverUri, album_cover_uri = :albumCoverUri " +
+            "WHERE download_id = :downloadId"
+    )
+    suspend fun setCoverUris(downloadId: String, songCoverUri: String?, albumCoverUri: String?)
+
+    /** Cover URIs some offline copy still uses, in any state. */
+    @Query(
+        "SELECT song_cover_uri FROM offline_tracks WHERE song_cover_uri IS NOT NULL " +
+            "UNION SELECT album_cover_uri FROM offline_tracks WHERE album_cover_uri IS NOT NULL"
+    )
+    suspend fun getCoverUrisInUse(): List<String>
+
     @Query("DELETE FROM offline_tracks WHERE source_uri = :sourceUri")
     suspend fun deleteBySourceUri(sourceUri: String)
 

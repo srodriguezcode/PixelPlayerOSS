@@ -60,7 +60,8 @@ data class OfflineDownload(
 class CloudOfflineRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dao: OfflineTrackDao,
-    private val workManager: WorkManager
+    private val workManager: WorkManager,
+    private val covers: OfflineCopyCovers
 ) {
     private val mutationMutex = Mutex()
 
@@ -110,7 +111,9 @@ class CloudOfflineRepository @Inject constructor(
                         localPath = null,
                         state = OfflineDownloadStatus.QUEUED.storageValue,
                         createdAt = existing?.createdAt ?: now,
-                        updatedAt = now
+                        updatedAt = now,
+                        songCoverUri = existing?.songCoverUri,
+                        albumCoverUri = existing?.albumCoverUri
                     )
                 }
                 if (attempts.isEmpty()) continue
@@ -190,6 +193,7 @@ class CloudOfflineRepository @Inject constructor(
             } finally {
                 entity.localPath?.let(::File)?.takeIf { it.exists() }?.delete()
                 deleteAttemptFiles(context, entity.downloadId, entity.attemptId)
+                covers.deleteUnused()
             }
         }
     }
@@ -203,6 +207,7 @@ class CloudOfflineRepository @Inject constructor(
             Uri.fromFile(file)
         } else {
             dao.deleteBySourceUri(sourceUri)
+            covers.deleteUnused()
             null
         }
     }

@@ -7,6 +7,7 @@ import coil.size.Dimension
 import coil.size.Size
 import com.google.common.truth.Truth.assertThat
 import com.lostf1sh.pixelplayeross.data.navidrome.NavidromeRepository
+import com.lostf1sh.pixelplayeross.data.offline.OfflineCopyCovers
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,9 @@ class NavidromeCoilFetcherTest {
     @TempDir
     lateinit var cacheDir: File
 
+    @TempDir
+    lateinit var filesDir: File
+
     private val coverUri = mockk<Uri>(relaxed = true) {
         every { host } returns "al-12"
         every { getQueryParameter("size") } returns null
@@ -40,7 +44,7 @@ class NavidromeCoilFetcherTest {
 
         // Coil runs fetchers on the ImageLoader's Default dispatcher.
         val fetch = launch(Dispatchers.Default) {
-            NavidromeCoilFetcher(coverUri, repository, server.client, cacheDir).fetch()
+            NavidromeCoilFetcher(coverUri, repository, server.client, cacheDir, filesDir).fetch()
             completedNormally = true
         }
         assertThat(server.firstRequestStarted.await(5, TimeUnit.SECONDS)).isTrue()
@@ -61,7 +65,7 @@ class NavidromeCoilFetcherTest {
             .addInterceptor { throw IOException("The server must not be contacted") }
             .build()
 
-        val result = NavidromeCoilFetcher(coverUri, repository, unreachable, cacheDir).fetch()
+        val result = NavidromeCoilFetcher(coverUri, repository, unreachable, cacheDir, filesDir).fetch()
 
         assertThat((result as SourceResult).dataSource).isEqualTo(DataSource.DISK)
     }
@@ -85,7 +89,7 @@ class NavidromeCoilFetcherTest {
             .addInterceptor { throw IOException("The server must not be contacted") }
             .build()
 
-        val result = NavidromeCoilFetcher(sizedCoverUri, repository, unavailable, cacheDir).fetch()
+        val result = NavidromeCoilFetcher(sizedCoverUri, repository, unavailable, cacheDir, filesDir).fetch()
         assertThat((result as SourceResult).dataSource).isEqualTo(DataSource.DISK)
     }
 
@@ -124,9 +128,28 @@ class NavidromeCoilFetcherTest {
             .addInterceptor { throw IOException("Connection refused") }
             .build()
 
-        val result = NavidromeCoilFetcher(coverUri, repository, failing, cacheDir).fetch()
+        val result = NavidromeCoilFetcher(coverUri, repository, failing, cacheDir, filesDir).fetch()
 
         assertThat(result).isNull()
+        assertThat(cacheDir.listFiles()).isEmpty()
+    }
+
+    @Test
+    fun `saved cover of an offline copy is served at any size without the server`() = runTest {
+        val saved = OfflineCopyCovers.fileFor(filesDir, "navidrome_cover", "al-12")
+            .apply { parentFile!!.mkdirs() }
+        saved.writeBytes(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47))
+        val sizedCoverUri = mockk<Uri> {
+            every { host } returns "al-12"
+            every { getQueryParameter("size") } returns "0"
+        }
+        val unreachable = OkHttpClient.Builder()
+            .addInterceptor { throw IOException("The server must not be contacted") }
+            .build()
+
+        val result = NavidromeCoilFetcher(sizedCoverUri, repository, unreachable, cacheDir, filesDir, Size(256, 256)).fetch()
+
+        assertThat((result as SourceResult).source.file().toString()).isEqualTo(saved.absolutePath)
         assertThat(cacheDir.listFiles()).isEmpty()
     }
 }
