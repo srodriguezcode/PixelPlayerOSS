@@ -171,6 +171,17 @@ class JellyfinCoilFetcherTest {
         assertThat((result as SourceResult).cachedPath()).isEqualTo(saved.absolutePath)
     }
 
+    @Test
+    fun `saved cover of an offline copy is served after logout`() = runTest {
+        val saved = saveCover("item-1")
+        every { repository.isLoggedIn } returns false
+
+        val result = JellyfinCoilFetcher(coverUri, repository, unreachableClient, cacheDir, filesDir).fetch()
+
+        assertThat((result as SourceResult).cachedPath()).isEqualTo(saved.absolutePath)
+        assertThat(unreachableRequests.get()).isEqualTo(0)
+    }
+
     private fun saveCover(itemId: String): File =
         OfflineCopyCovers.fileFor(filesDir, "jellyfin_cover", itemId).apply {
             parentFile!!.mkdirs()
