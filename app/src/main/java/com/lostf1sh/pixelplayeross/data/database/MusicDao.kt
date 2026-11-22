@@ -134,8 +134,10 @@ private const val LIBRARY_ARTISTS_SELECT = """
     FROM songs
 """
 
-private const val TRACK_ARTIST_JOIN = """
+/** Artists tab lists only each song's primary artist (`is_primary`); featured artists keep their page but get no tab row. */
+private const val PRIMARY_TRACK_ARTIST_JOIN = """
     INNER JOIN song_artist_cross_ref ON song_artist_cross_ref.song_id = songs.id
+        AND song_artist_cross_ref.is_primary = 1
     INNER JOIN artists ON artists.id = song_artist_cross_ref.artist_id
 """
 
@@ -1437,7 +1439,7 @@ interface MusicDao {
         applyDirectoryFilter: Boolean
     ): Flow<List<ArtistEntity>>
 
-    @Query(LIBRARY_ARTISTS_SELECT + TRACK_ARTIST_JOIN + LIBRARY_ARTISTS_FILTER_AND_ORDER)
+    @Query(LIBRARY_ARTISTS_SELECT + PRIMARY_TRACK_ARTIST_JOIN + LIBRARY_ARTISTS_FILTER_AND_ORDER)
     fun getArtistsPaginated(
         allowedParentDirs: List<String>,
         applyDirectoryFilter: Boolean,
@@ -1449,9 +1451,9 @@ interface MusicDao {
     /**
      * Album-artist variant of [getArtistsPaginated], used when "Group by Album Artist" is on.
      * Collapses the Artists tab onto each song's effective album artist (songs.album_artist_id)
-     * instead of every track-level artist, so featured/compilation artists stop cluttering the
-     * list. Counts are per-album-artist; sorting and source/directory filtering mirror the
-     * track-artist query so toggling the preference only swaps which query backs the tab.
+     * instead of each song's primary artist, so compilation artists stop cluttering the list.
+     * Counts are per-album-artist; sorting and source/directory filtering mirror the
+     * primary-artist query so toggling the preference only swaps which query backs the tab.
      */
     @Query(LIBRARY_ARTISTS_SELECT + ALBUM_ARTIST_JOIN + LIBRARY_ARTISTS_FILTER_AND_ORDER)
     fun getArtistsPaginatedByAlbumArtist(
@@ -1462,7 +1464,7 @@ interface MusicDao {
         minTracks: Int = 1
     ): PagingSource<Int, ArtistEntity>
 
-    @Query(LIBRARY_ARTISTS_SELECT + TRACK_ARTIST_JOIN + LIBRARY_ARTISTS_FILTER_AND_ORDER + " LIMIT :limit OFFSET :offset")
+    @Query(LIBRARY_ARTISTS_SELECT + PRIMARY_TRACK_ARTIST_JOIN + LIBRARY_ARTISTS_FILTER_AND_ORDER + " LIMIT :limit OFFSET :offset")
     suspend fun getArtistsPage(
         allowedParentDirs: List<String>,
         applyDirectoryFilter: Boolean,
